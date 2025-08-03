@@ -18,6 +18,7 @@ wheels/
 .env/
 .uv/
 
+
 # VSCode / IDE configs
 .vscode/
 .idea/
@@ -28,3 +29,5 @@ Thumbs.db
 
 # uv environment file
 uv.env
+# environment file
+.env
