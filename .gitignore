@@ -1,0 +1,30 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches
+.cache/
+*.log
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+wheels/
+
+# Environments
+.venv/
+.env/
+.uv/
+
+# VSCode / IDE configs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# uv environment file
+uv.env
