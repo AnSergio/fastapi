@@ -17,7 +17,7 @@ security = HTTPBasic()
     "/",
     tags=["Autenticação"],
     summary="Autenticar usuário",
-    description=(description),
+    description=description,
     response_model=AuthResponse,
     responses=responses,
     status_code=200
@@ -51,12 +51,13 @@ async def auth(credentials: HTTPBasicCredentials = Depends(on_basic_auth)):
         doc = convert_id(doc)
         # print(f"doc: {doc}")
 
-        token = criar_token({"sub": credentials.username})
+        token = criar_token({"_id": str(doc["_id"]), "user": credentials.username})
+
         usuario = {
-            "_id": doc["_id"],
+            "_id": str(doc["_id"]),
             "nome": doc["nome"],
             "perfil": doc["perfil"],
-            "nivel": doc["nivel"],
+            "nivel": int(doc["nivel"]),
             "status": doc["status"],
             "venda": doc.get("venda", ""),
             "imagem": doc.get("imagem", "")

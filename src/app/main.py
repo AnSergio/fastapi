@@ -1,7 +1,9 @@
 # src/main.py
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.app.routes import auth, mongodb
+from src.app.core.security import on_bearer_auth
+from src.app.routes import auth, mongodb, task
+
 from src.app.core.config import config
 
 app = FastAPI(title="API REST em FastAPI")
@@ -14,13 +16,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Middleware personalizado
-
-
 # Rotas organizadas
 app.include_router(auth.router, prefix="/auth")
 
-app.include_router(mongodb.router, prefix="/mongodb")
+app.include_router(mongodb.router, prefix="/mongodb", dependencies=[Depends(on_bearer_auth)])
+
+app.include_router(task.router, prefix="/tasks")
 
 print(f"🌐 Servidor HTTP e WS rodando http://{config.SERV_HOST}:{config.SERV_PORT} 🚀")
 

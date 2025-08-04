@@ -7,7 +7,7 @@ class Usuario(BaseModel):
     id: str = Field(..., alias="_id")
     nome: str
     perfil: str
-    nivel: str
+    nivel: int
     status: bool
     venda: Optional[str] = ""
     imagem: Optional[str] = ""
