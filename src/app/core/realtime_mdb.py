@@ -91,6 +91,6 @@ def main(uri):
 
 
 if __name__ == "__main__":
-    mongo_uri = 'mongodb://root:Root312536*@192.168.0.250:27017,192.168.0.252:27017,192.168.0.253:27017/?authSource=admin&replicaSet=newcotex'
+    mongo_uri = 'mongodb://teste:teste@127.0.0.1:27017'
     uri = sys.argv[1] if len(sys.argv) > 1 else mongo_uri
     main(uri)

@@ -64,5 +64,5 @@ def main(DSN: str):
 
 
 if __name__ == "__main__":
-    DSN = sys.argv[1] if len(sys.argv) > 1 else '192.168.0.252:/home/dados/newcotex/sprcom.fb'
+    DSN = sys.argv[1] if len(sys.argv) > 1 else '127.0.0.1:/home/firebird/dados.fdb'
     main(DSN)
