@@ -13,7 +13,7 @@ router = APIRouter()
 security = HTTPBasic()
 
 
-@router.post(
+@router.get(
     "/",
     tags=["Autenticação"],
     summary="Autenticar usuário",

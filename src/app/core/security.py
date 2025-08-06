@@ -62,7 +62,7 @@ def on_bearer_auth(request: Request):
 
     try:
         payload = jwt.decode(token, key, algorithms)
-        print(f"payload: {payload}")
+        # print(f"payload: {payload}")
         return payload  # Você pode retornar o usuário, claims, etc.
 
     except JWTError:

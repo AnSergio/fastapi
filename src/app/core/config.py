@@ -2,7 +2,7 @@
 import os
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
-
+from pymongo import MongoClient
 
 load_dotenv()
 
@@ -21,3 +21,5 @@ config = Config()
 
 
 client = AsyncIOMotorClient(config.DB_URIS)
+
+pymongo_client = MongoClient(config.DB_URIS)
