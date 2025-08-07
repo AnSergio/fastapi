@@ -3,6 +3,7 @@ import time
 import threading
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError, OperationFailure
+from src.app.core.ws_manager import manager
 
 # Intervalos de retry progressivos (em segundos)
 valid_time = {1: 2, 2: 5, 5: 10, 10: 30, 30: 60, 60: 60}
@@ -17,7 +18,7 @@ active_threads = []
 stop_event = threading.Event()
 
 
-def stop_watchers():
+def stop_mdb():
     stop_event.set()
 
 
@@ -65,7 +66,7 @@ def start_watchers(uri, time_delay):
         print("✅ Cliente Mongo encerrado com segurança", flush=True)
 
 
-def watch_coll(coll, db_name, coll_name, on_restart):
+async def watch_coll(coll, db_name, coll_name, on_restart):
     try:
         with coll.watch() as change_stream:
             for change in change_stream:
@@ -75,31 +76,29 @@ def watch_coll(coll, db_name, coll_name, on_restart):
                 if ns:
                     realtime = f"{ns['db']}/{ns['coll']}"
                     print(f"realtime/{realtime}", flush=True)
+                    message = f"realtime/{realtime}"
+                    await manager.send_message(message)
 
     except (OperationFailure, PyMongoError) as e:
         print(f"❌ Erro em {db_name}/{coll_name}: {e}", flush=True)
         on_restart()
 
 
-def main(uri):
+def main_mdb(uri):
     global active_threads
     time_delay = initial_time
 
-    try:
-        while not stop_event.is_set():
-            stop_event.clear()
-            active_threads = []
+    while not stop_event.is_set():
+        stop_event.clear()
+        active_threads = []
 
-            print(f"📡 Iniciando monitoramento... (delay atual: {time_delay}s)", flush=True)
-            start_watchers(uri, time_delay)
+        print(f"📡 Iniciando realtime_mdb! (delay: {time_delay}s)", flush=True)
+        start_watchers(uri, time_delay)
 
-            if stop_event.is_set():
-                break
+        if stop_event.is_set():
+            break
 
-            print(f"Reiniciando em {time_delay}s...\n", flush=True)
-            time.sleep(time_delay)
+        print(f"Reiniciando em {time_delay}s...\n", flush=True)
+        time.sleep(time_delay)
 
-    except KeyboardInterrupt:
-        print("🛑 Interrompido manualmente", flush=True)
-
-    print("🛑 Watcher finalizado1", flush=True)
+    print("🛑 Watcher realtime_mdb finalizado!", flush=True)

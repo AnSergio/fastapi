@@ -1,11 +1,7 @@
 # src/utils/realtime_fdb.py
-import sys
 import time
+import threading
 import fdb
-
-# Conexão Firebird
-USER = "SYSDBA"
-PASSWORD = "masterkey"
 
 # Eventos Firebird que serão monitorados
 event_nomes = ["cp_pedido", "cp_pedido_item", "tnfcanfen", "tnfcanfsa", "tnfitnfen", "tnfitnfsa"]
@@ -14,8 +10,16 @@ event_nomes = ["cp_pedido", "cp_pedido_item", "tnfcanfen", "tnfcanfsa", "tnfitnf
 valid_time = {1: 2, 2: 5, 5: 10, 10: 30, 30: 60, 60: 60}
 initial_time = 1
 
+# Controle externo
+active_threads = []
+stop_event = threading.Event()
 
-def start_watch(connect, time_delay):
+
+def stop_fdb():
+    stop_event.set()
+
+
+def start_watcher(connect, time_delay):
     def on_restart():
         nonlocal time_delay
         time_delay = valid_time[time_delay]
@@ -42,28 +46,31 @@ def start_watch(connect, time_delay):
         on_restart()
 
 
-def main(DSN: str):
+def main_fdb(dsn: str, user: str, password: str):
+    global active_threads
     time_delay = initial_time
 
-    while True:
-        try:
-            print(f"\n Iniciando monitoramento... (delay atual: {time_delay}s)\n", flush=True)
-            connect = fdb.connect(dsn=DSN, user=USER, password=PASSWORD)
-            start_watch(connect, time_delay)
-        except RuntimeError:
-            print(f"Reiniciando em {time_delay}s...\n", flush=True)
-            time.sleep(time_delay)
-        except KeyboardInterrupt:
-            print("Encerrando...", flush=True)
+    while not stop_event.is_set():
+        stop_event.clear()
+        active_threads = []
+
+        print(f"📡 Iniciando realtime_fdb! (delay: {time_delay}s)", flush=True)
+        connect = fdb.connect(dsn=dsn, user=user, password=password)
+        thread = threading.Thread(
+            target=start_watcher,
+            args=(connect, time_delay),
+            daemon=True
+        )
+        thread.start()
+        active_threads.append(thread)
+
+        while thread.is_alive() and not stop_event.is_set():
+            time.sleep(1)
+
+        if stop_event.is_set():
             break
-        finally:
-            try:
-                connect.close()
-                print("Conexão fechada\n", flush=True)
-            except:
-                pass
 
+        print(f"🔄 Reiniciando Firebird em {time_delay}s...\n", flush=True)
+        time.sleep(time_delay)
 
-if __name__ == "__main__":
-    DSN = sys.argv[1] if len(sys.argv) > 1 else '127.0.0.1:/home/firebird/dados.fdb'
-    main(DSN)
+    print("🛑 Watcher realtime_fdb finalizado!", flush=True)

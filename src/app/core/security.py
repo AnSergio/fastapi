@@ -28,7 +28,7 @@ def criar_token(dados: dict):
 def verificar_token(token: str):
     try:
         return jwt.decode(token, key, algorithms)
-    except JWTError:
+    except JWTError as e:
         return None
 
 

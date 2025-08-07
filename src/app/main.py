@@ -2,8 +2,9 @@
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.app.core.security import on_bearer_auth
-from src.app.routes import websocket, auth, mongodb
+from src.app.routes import test, websocket, auth, mongodb
 from src.app.core.config import config
+
 
 app = FastAPI(title="API REST FastAPI")
 
@@ -18,6 +19,8 @@ app.add_middleware(
 
 # Rotas organizadas
 app.include_router(websocket.router)
+
+app.include_router(test.router)
 
 app.include_router(auth.router, prefix="/auth")
 

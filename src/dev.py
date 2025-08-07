@@ -2,7 +2,8 @@
 import asyncio
 import uvicorn
 import threading
-from src.utils.realtime_mdb import main as main_mdb, stop_watchers
+from src.utils.realtime_fdb import main_fdb, stop_fdb
+from src.utils.realtime_mdb import main_mdb, stop_mdb
 from src.app.core.config import config
 
 
@@ -12,18 +13,28 @@ async def start_fastapi():
     await server.serve()
 
 
-# Função que roda o watcher do MongoDB
-def mongo_watcher():
+# Função que roda os watchers (MongoDB + Firebird) em paralelo
+def watchers_thread():
     try:
         print("⏳ Processo paralelo rodando...")
-        main_mdb(config.DB_URIS)
+
+        # Threads separadas para MongoDB e Firebird
+        fdb_thread = threading.Thread(target=main_fdb, args=(config.DB_UDNS, config.DB_USER, config.DB_PASS))
+        mdb_thread = threading.Thread(target=main_mdb, args=(config.DB_URIS,))
+
+        fdb_thread.start()
+        mdb_thread.start()
+
+        fdb_thread.join()
+        mdb_thread.join()
+
     except Exception as e:
-        print("❌ Erro no watcher MongoDB:", e)
+        print("❌ Erro nos watchers:", e)
 
 
 async def outro_processo():
-    # Executa o watcher em thread separada
-    thread = threading.Thread(target=mongo_watcher)
+    # Roda os watchers em thread separada para não travar o loop principal
+    thread = threading.Thread(target=watchers_thread)
     thread.start()
     return thread
 
@@ -32,9 +43,11 @@ async def async_main():
     try:
         watcher_thread = await outro_processo()
         await asyncio.gather(start_fastapi())
+
     except asyncio.CancelledError:
         print("🧹 Tarefas canceladas")
-        stop_watchers()
+        stop_fdb()
+        stop_mdb()
         if watcher_thread.is_alive():
             watcher_thread.join()
         print("✅ Finalizando com segurança...")
