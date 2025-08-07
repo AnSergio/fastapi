@@ -7,7 +7,11 @@ from src.app.core.config import client
 router = APIRouter()
 
 
-@router.post("/aggregate")
+@router.post(
+    "/aggregate",
+    summary="Executa uma agregação no MongoDB",
+    description="Recebe um pipeline de agregação e retorna os documentos resultantes"
+)
 async def on_aggregate(body: AggregateRequest):
     # print(f"body: {body}")
     pipeline = convert_oid(body.pipeline)

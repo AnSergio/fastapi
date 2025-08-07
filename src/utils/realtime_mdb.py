@@ -1,12 +1,13 @@
-import sys
+# src/utils/realtime_mdb.py
 import time
 import threading
 from pymongo import MongoClient
-from pymongo.errors import PyMongoError
+from pymongo.errors import PyMongoError, OperationFailure
 
 # Intervalos de retry progressivos (em segundos)
 valid_time = {1: 2, 2: 5, 5: 10, 10: 30, 30: 60, 60: 60}
 initial_time = 1
+is_client_closed = False
 
 # Bancos que não serão monitorados
 dbs_ignorados = ["admin", "config", "local"]
@@ -16,20 +17,8 @@ active_threads = []
 stop_event = threading.Event()
 
 
-def watch_coll(coll, db_name, coll_name, on_restart):
-    try:
-        with coll.watch() as change_stream:
-            for change in change_stream:
-                ns = change.get("ns")
-                if ns:
-                    realtime = f"{ns['db']}/{ns['coll']}"
-                    print(f"realtime/{realtime}", flush=True)
-    except KeyboardInterrupt:
-        print("Interrompido manualmente", flush=True)
-        raise
-    except PyMongoError as e:
-        print(f"Erro em {db_name}/{coll_name}: {e}", flush=True)
-        on_restart()
+def stop_watchers():
+    stop_event.set()
 
 
 def start_watchers(uri, time_delay):
@@ -66,31 +55,51 @@ def start_watchers(uri, time_delay):
             time.sleep(1)
 
     except KeyboardInterrupt:
-        print("Interrompido manualmente", flush=True)
+        print("🛑 Interrompido manualmente", flush=True)
         raise
     except Exception as e:
-        print(f"Erro geral: {e}", flush=True)
+        print(f"❌ Erro geral: {e}", flush=True)
         on_restart()
     finally:
         client.close()
+        print("✅ Cliente Mongo encerrado com segurança", flush=True)
+
+
+def watch_coll(coll, db_name, coll_name, on_restart):
+    try:
+        with coll.watch() as change_stream:
+            for change in change_stream:
+                if stop_event.is_set():
+                    break
+                ns = change.get("ns")
+                if ns:
+                    realtime = f"{ns['db']}/{ns['coll']}"
+                    print(f"realtime/{realtime}", flush=True)
+
+    except (OperationFailure, PyMongoError) as e:
+        print(f"❌ Erro em {db_name}/{coll_name}: {e}", flush=True)
+        on_restart()
 
 
 def main(uri):
     global active_threads
     time_delay = initial_time
 
-    while True:
-        stop_event.clear()
-        active_threads = []
+    try:
+        while not stop_event.is_set():
+            stop_event.clear()
+            active_threads = []
 
-        print(f"\nIniciando monitoramento... (delay atual: {time_delay}s)\n", flush=True)
-        start_watchers(uri, time_delay)
+            print(f"📡 Iniciando monitoramento... (delay atual: {time_delay}s)", flush=True)
+            start_watchers(uri, time_delay)
 
-        print(f"Reiniciando em {time_delay}s...\n", flush=True)
-        time.sleep(time_delay)
+            if stop_event.is_set():
+                break
 
+            print(f"Reiniciando em {time_delay}s...\n", flush=True)
+            time.sleep(time_delay)
 
-if __name__ == "__main__":
-    mongo_uri = 'mongodb://teste:teste@127.0.0.1:27017'
-    uri = sys.argv[1] if len(sys.argv) > 1 else mongo_uri
-    main(uri)
+    except KeyboardInterrupt:
+        print("🛑 Interrompido manualmente", flush=True)
+
+    print("🛑 Watcher finalizado1", flush=True)

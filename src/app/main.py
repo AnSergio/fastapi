@@ -1,21 +1,11 @@
 # src/main.py
-import asyncio
-
-from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.app.core.security import on_bearer_auth
-from src.app.core.realtime import on_realtime_mdb
-from src.app.routes import websocket, auth, mongodb, task
+from src.app.routes import websocket, auth, mongodb
 from src.app.core.config import config
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    asyncio.create_task(on_realtime_mdb())
-    yield
-
-app = FastAPI(lifespan=lifespan, title="API REST em FastAPI")
+app = FastAPI(title="API REST FastAPI")
 
 # CORS
 app.add_middleware(
@@ -31,9 +21,6 @@ app.include_router(websocket.router)
 
 app.include_router(auth.router, prefix="/auth")
 
-app.include_router(mongodb.router, prefix="/mongodb", dependencies=[Depends(on_bearer_auth)])
-
-app.include_router(task.router, prefix="/tasks")
-
+app.include_router(mongodb.router, prefix="/mongodb", tags=["MongoDB"], dependencies=[Depends(on_bearer_auth)])
 
 print(f"🌐 Servidor HTTP e WS rodando http://{config.SERV_HOST}:{config.SERV_PORT} 🚀")

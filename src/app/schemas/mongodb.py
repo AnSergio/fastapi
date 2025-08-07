@@ -1,12 +1,12 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
 class AggregateRequest(BaseModel):
-    db: str
-    coll: str
-    pipeline: List[dict] = Field(..., alias="pipeline")
-    options: Optional[dict] = None
+    db: str = Field(..., description="Nome do banco de dados")
+    coll: str = Field(..., description="Nome da coleção")
+    pipeline: List[Dict[str, Any]] = Field(..., description="Pipeline de agregação")
+    options: Optional[Dict[str, Any]] = Field(default=None, description="Opções adicionais para agregação")
 
 
 class DeleteRequest(BaseModel):
