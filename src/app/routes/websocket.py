@@ -1,3 +1,4 @@
+# src/app/routes/websocket.py
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from src.app.core.security import verificar_token
 from src.app.core.websocket import manager

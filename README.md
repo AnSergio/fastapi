@@ -15,30 +15,42 @@ API assíncrona criada com [FastAPI](https://fastapi.tiangolo.com/) e [Motor](ht
 pip install uv
 
 # Instalar dependências
-uv pip install -r requirements.txt
+uv add
 
 # Rodar com reload automático
-uvicorn src.main:app --reload
-
 uv run dev
 
 .
 ├── src/
-│   ├── main.py            # Ponto de entrada (FastAPI app)
-│   ├── db/                # Conexão com o MongoDB (motor)
-│   ├── models/            # Modelos de dados (Pydantic ou BSON)
-│   ├── routes/            # Rotas organizadas por domínio
-│   ├── utils/             # Funções auxiliares (ex: conversão de ObjectId)
-│   └── config.py          # Configurações globais
-├── tests/                 # Testes automatizados
-├── pyproject.toml         # Configuração do projeto e dependências
-├── README.md              # Este arquivo
-└── .env                   # Variáveis de ambiente (opcional)
+│   ├── app/                    # FastAPI
+│   │    ├── core
+│   │    │    ├── config.py     # Configurações globais
+│   │    │    ├── mongodb.py    # Funções auxiliares (ex: conversão de ObjectId)
+│   │    │    └── security.py
+│   │    ├── models
+│   │    ├── rotes              # Rotas organizadas por domínio
+│   │    │    ├── auth.py
+│   │    │    └── mongodb.py
+│   │    ├── schemas
+│   │    │    └── auth.py
+│   │    └── main.py
+│   └── dev.py
+├── pyproject.toml              # Configuração do projeto e dependências
+├── pyproject.toml              # Configuração do projeto e dependências
+├── README.md                   # Este arquivo
+└── .env                        # Variáveis de ambiente (opcional)
 
 MONGO_URI=mongodb://localhost:27017
 MONGO_DB=apirest
 
 [tool.uv]
 scripts = { dev = "uvicorn src.main:app --reload" }
+
+```
+
+```
+Usando o pyinstaller
+
+uv run pyinstaller --onefile --name apirest --add-data ".env:." start.py
 
 ```

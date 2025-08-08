@@ -8,19 +8,29 @@ load_dotenv()
 
 
 class Config:
-    SERV_HOST = os.getenv("SERV_HOST", "127.0.0.1")
-    SERV_PORT = int(os.getenv("SERV_PORT", "8000"))
-    SERV_NAME = os.getenv("SERV_NAME", "Teste")
-    SERV_KEYS = os.getenv("SERV_KEYS", "supersecret")
-    DB_URIS = os.getenv("DB_URIS", "mongodb://teste:teste@127.0.0.1:27017/")
-    DB_UDNS = os.getenv("DB_UDNS", "127.0.0.1:/home/firebird/dados.fdb")
-    DB_USER = os.getenv("DB_USER", "sysdba")
-    DB_PASS = os.getenv("DB_PASS", "masterkey")
+    host = os.getenv("SERV_HOST", "127.0.0.1")
+    port = int(os.getenv("SERV_PORT", "8000"))
+    nome = os.getenv("SERV_NAME", "Teste")
+    key = os.getenv("SERV_KEYS", "supersecret")
+    uri = os.getenv("DB_URIS", "mongodb://teste:teste@127.0.0.1:27017/")
+    dns = os.getenv("DB_UDNS", "127.0.0.1:/home/firebird/dados.fdb")
+    user = os.getenv("DB_USER", "sysdba")
+    password = os.getenv("DB_PASS", "masterkey")
 
 
 config = Config()
 
 
-client = AsyncIOMotorClient(config.DB_URIS)
+host = config.host
+port = config.port
+nome = config.nome
+key = config.key
+uri = config.uri
+dns = config.dns
+user = config.user
+password = config.password
 
-pymongo_client = MongoClient(config.DB_URIS)
+
+client = AsyncIOMotorClient(uri)
+
+pymongo_client = MongoClient(uri)

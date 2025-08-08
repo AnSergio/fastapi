@@ -1,18 +1,16 @@
 # src/app/core/security.py
 import base64
-from fastapi.security import HTTPBasic, HTTPBearer, HTTPBasicCredentials, HTTPAuthorizationCredentials
-from fastapi import Security, HTTPException, Request, status
+from fastapi.security import HTTPBasic, HTTPBearer, HTTPBasicCredentials
+from fastapi import HTTPException, Request, status
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
-from src.app.core.config import config
+from src.app.core.config import key
 
 
 security_basic = HTTPBasic()
 security_bearer = HTTPBearer()
 
-
 time = timedelta(hours=12)
-key = config.SERV_KEYS
 algorithms = 'HS256'
 
 

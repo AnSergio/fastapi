@@ -9,13 +9,14 @@ dependencies = [
   "fastapi>=0.116.1",
   "fdb>=2.0.4",
   "motor>=3.7.1",
-  "pacote>=0.3.0",
+  "pyinstaller>=6.15.0",
   "python-jose>=3.5.0",
   "uvicorn[standard]>=0.35.0",
 ]
 
 [project.scripts]
 dev = "src.dev:main"
+start = "src.start:main"
 
 [build-system]
 requires = ["hatchling"]

@@ -1,11 +1,10 @@
 from fastapi import APIRouter
-from src.app.core.websocket import manager
-
+# from src.app.routes.socketio import sio
 
 router = APIRouter()
 
 
 @router.get("/test")
-async def test_websocket():
-    await manager.broadcast("realtime/firebird/cp_pedido")
-    return {"status": "ok", "detail": "Mensagem enviada para todos os clientes WebSocket."}
+async def test_ws():
+    # await sio.emit("realtime", "acesso/usuarios")
+    return {"status": "ok"}

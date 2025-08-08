@@ -1,14 +1,14 @@
 # src/utils/realtime_fdb.py
+import fdb
 import time
 import threading
-import fdb
+
 
 # Eventos Firebird que serão monitorados
 event_nomes = ["cp_pedido", "cp_pedido_item", "tnfcanfen", "tnfcanfsa", "tnfitnfen", "tnfitnfsa"]
 
 # Retry progressivo (em segundos)
 valid_time = {1: 2, 2: 5, 5: 10, 10: 30, 30: 60, 60: 60}
-initial_time = 1
 
 # Controle externo
 active_threads = []
@@ -48,11 +48,10 @@ def start_watcher(connect, time_delay):
 
 def main_fdb(dsn: str, user: str, password: str):
     global active_threads
-    time_delay = initial_time
+    time_delay = 1
 
     while not stop_event.is_set():
         stop_event.clear()
-        active_threads = []
 
         print(f"📡 Iniciando realtime_fdb! (delay: {time_delay}s)", flush=True)
         connect = fdb.connect(dsn=dsn, user=user, password=password)

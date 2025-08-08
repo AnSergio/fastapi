@@ -1,3 +1,4 @@
+# src/app/core/websocket.py
 from fastapi import WebSocket
 
 

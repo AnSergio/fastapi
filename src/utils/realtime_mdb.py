@@ -1,102 +1,92 @@
 # src/utils/realtime_mdb.py
-import time
-import threading
-from pymongo import MongoClient
-from pymongo.errors import PyMongoError, OperationFailure
-
-
-# Intervalos de retry progressivos (em segundos)
-valid_time = {1: 2, 2: 5, 5: 10, 10: 30, 30: 60, 60: 60}
-initial_time = 1
-is_client_closed = False
+import asyncio
+from motor.motor_asyncio import AsyncIOMotorClient
 
 # Bancos que não serão monitorados
-dbs_ignorados = ["admin", "config", "local"]
+dbs_ignorados = {"admin", "config", "local"}
 
-# Guarda os streams ativos para poder fechá-los depois (simulado via flags)
-active_threads = []
-stop_event = threading.Event()
+# Retry progressivo (em segundos)
+valid_time = {1: 2, 2: 5, 5: 10, 10: 30, 30: 60, 60: 60}
+
+# Controle externo
+stop_event = asyncio.Event()
 
 
 def stop_mdb():
     stop_event.set()
 
 
-def start_watchers(uri, time_delay):
-    client = MongoClient(uri)
-    admin = client.admin
+async def start_watcher(uri: str, time_delay: int):
+    client = AsyncIOMotorClient(uri)
 
-    def on_restart():
+    async def on_restart():
         nonlocal time_delay
-        time_delay = valid_time[time_delay]
+        time_delay = valid_time.get(time_delay, 60)
         stop_event.set()
 
-    try:
-        dbs_info = admin.command("listDatabases")["databases"]
-        time_delay = 1  # Reset tempo a cada início bem-sucedido
+    async def on_change(change_stream):
+        async for change in change_stream:
+            ns = change.get("ns")
+            if ns:
+                realtime = f"{ns['db']}/{ns['coll']}"
+                print(f"realtime/{realtime}", flush=True)
+                # await manager.broadcast(f"realtime/{realtime}")
 
-        for db_info in dbs_info:
+            if stop_event.is_set():
+                await change_stream.close()
+                break
+
+    try:
+        dbs_info = await client.admin.command("listDatabases")
+        databases = dbs_info["databases"]
+        time_delay = 1
+        tasks = []
+
+        for db_info in databases:
             db_name = db_info["name"]
             if db_name in dbs_ignorados:
                 continue
 
             db = client[db_name]
-            for coll_name in db.list_collection_names():
-                coll = db[coll_name]
-                thread = threading.Thread(
-                    target=watch_coll,
-                    args=(coll, db_name, coll_name, on_restart),
-                    daemon=True
-                )
-                thread.start()
-                active_threads.append(thread)
+            colls = await db.list_collection_names()
+            for coll_name in colls:
+                collection = db[coll_name]
+                change_stream = collection.watch()
+                tasks.append(asyncio.create_task(on_change(change_stream)))
 
-        # Aguardar enquanto não houver pedido de reinício
-        while not stop_event.is_set():
-            time.sleep(1)
+        # Aguarda todas as tasks terminarem (ou o stop_event ser ativado)
+        await asyncio.gather(*tasks)
 
-    except KeyboardInterrupt:
+    except asyncio.CancelledError:
         print("🛑 Interrompido manualmente", flush=True)
         raise
     except Exception as e:
-        print(f"❌ Erro geral: {e}", flush=True)
-        on_restart()
-    finally:
-        client.close()
-        print("✅ Cliente Mongo encerrado com segurança", flush=True)
+        if not stop_event.is_set():
+            print(f"❌ Erro geral: {e}", flush=True)
+            await on_restart()
+        else:
+            client.close()
 
 
-def watch_coll(coll, db_name, coll_name, on_restart):
-    try:
-        with coll.watch() as change_stream:
-            for change in change_stream:
-                if stop_event.is_set():
-                    break
-                ns = change.get("ns")
-                if ns:
-                    realtime = f"{ns['db']}/{ns['coll']}"
-                    print(f"realtime/{realtime}", flush=True)
-
-    except (OperationFailure, PyMongoError) as e:
-        print(f"❌ Erro em {db_name}/{coll_name}: {e}", flush=True)
-        on_restart()
-
-
-def main_mdb(uri):
-    global active_threads
-    time_delay = initial_time
+async def main_mdb(uri: str):
+    global stop_event
+    time_delay = 1
 
     while not stop_event.is_set():
         stop_event.clear()
-        active_threads = []
 
         print(f"📡 Iniciando realtime_mdb! (delay: {time_delay}s)", flush=True)
-        start_watchers(uri, time_delay)
+        task = asyncio.create_task(start_watcher(uri, time_delay))
+
+        try:
+            await task
+        except asyncio.CancelledError:
+            print("🛑 Watcher cancelado", flush=True)
 
         if stop_event.is_set():
             break
 
-        print(f"Reiniciando em {time_delay}s...\n", flush=True)
-        time.sleep(time_delay)
+        print(f"🔄 Reiniciando MongoDB em {time_delay}s...\n", flush=True)
+        await asyncio.sleep(time_delay)
 
     print("🛑 Watcher realtime_mdb finalizado!", flush=True)

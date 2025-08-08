@@ -1,60 +1,52 @@
 # src/dev.py
+import sys
+import signal
 import asyncio
 import uvicorn
 import threading
+from src.app.main import app
 from src.utils.realtime_fdb import main_fdb, stop_fdb
 from src.utils.realtime_mdb import main_mdb, stop_mdb
-from src.app.core.config import config
+from src.app.core.config import host, port, dns, user, password, uri
 
 
-async def start_fastapi():
-    config_uvicorn = uvicorn.Config("src.app.main:app", host=config.SERV_HOST, port=config.SERV_PORT, reload=True)
+def start_fastapi():
+    config_uvicorn = uvicorn.Config(app, host=host, port=port, reload=True)
     server = uvicorn.Server(config_uvicorn)
-    await server.serve()
+    server.run()
 
 
-# Função que roda os watchers (MongoDB + Firebird) em paralelo
-def watchers_thread():
-    try:
-        print("⏳ Processo paralelo rodando...")
-
-        # Threads separadas para MongoDB e Firebird
-        fdb_thread = threading.Thread(target=main_fdb, args=(config.DB_UDNS, config.DB_USER, config.DB_PASS))
-        mdb_thread = threading.Thread(target=main_mdb, args=(config.DB_URIS,))
-
-        fdb_thread.start()
-        mdb_thread.start()
-
-        fdb_thread.join()
-        mdb_thread.join()
-
-    except Exception as e:
-        print("❌ Erro nos watchers:", e)
-
-
-async def outro_processo():
-    # Roda os watchers em thread separada para não travar o loop principal
-    thread = threading.Thread(target=watchers_thread)
-    thread.start()
-    return thread
-
-
-async def async_main():
-    try:
-        watcher_thread = await outro_processo()
-        await asyncio.gather(start_fastapi())
-
-    except asyncio.CancelledError:
-        print("🧹 Tarefas canceladas")
-        stop_fdb()
-        stop_mdb()
-        if watcher_thread.is_alive():
-            watcher_thread.join()
-        print("✅ Finalizando com segurança...")
+def start_watchers():
+    print("⏳ Watchers em execução...")
+    fdb_thread = threading.Thread(target=main_fdb, args=(dns, user, password), daemon=True)
+    mdb_thread = threading.Thread(target=lambda: asyncio.run(main_mdb(uri)), daemon=True)
+    fdb_thread.start()
+    mdb_thread.start()
+    return [fdb_thread, mdb_thread]
 
 
 def main():
+    # Threads
+    fastapi_thread = threading.Thread(target=start_fastapi, daemon=True)
+    fastapi_thread.start()
+
+    start_watchers()
+
+    def signal_handler(*_args):
+        print(f"\n⛔ Recebido Ctrl+C! Encerrando serviços...")
+        stop_fdb()
+        stop_mdb()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, signal_handler)
+
+    # Mantém o programa rodando enquanto o FastAPI estiver ativo
     try:
-        asyncio.run(async_main())
+        while fastapi_thread.is_alive():
+            fastapi_thread.join(timeout=1)
     except KeyboardInterrupt:
-        print("⛔ Encerrado pelo usuário (CTRL+C)")
+        signal_handler(None, None)
+
+
+if __name__ == "__main__":
+    main()
