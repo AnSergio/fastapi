@@ -3,7 +3,7 @@ import time
 import threading
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError, OperationFailure
-from src.app.core.ws_manager import manager
+
 
 # Intervalos de retry progressivos (em segundos)
 valid_time = {1: 2, 2: 5, 5: 10, 10: 30, 30: 60, 60: 60}
@@ -66,7 +66,7 @@ def start_watchers(uri, time_delay):
         print("✅ Cliente Mongo encerrado com segurança", flush=True)
 
 
-async def watch_coll(coll, db_name, coll_name, on_restart):
+def watch_coll(coll, db_name, coll_name, on_restart):
     try:
         with coll.watch() as change_stream:
             for change in change_stream:
@@ -76,8 +76,6 @@ async def watch_coll(coll, db_name, coll_name, on_restart):
                 if ns:
                     realtime = f"{ns['db']}/{ns['coll']}"
                     print(f"realtime/{realtime}", flush=True)
-                    message = f"realtime/{realtime}"
-                    await manager.send_message(message)
 
     except (OperationFailure, PyMongoError) as e:
         print(f"❌ Erro em {db_name}/{coll_name}: {e}", flush=True)
