@@ -1,75 +1,84 @@
 # src/utils/realtime_fdb.py
+import os
 import fdb
-import time
-import threading
+import psutil
+import asyncio
+from src.app.core.websocket import ConnectionManager
 
-
-# Eventos Firebird que serão monitorados
-event_nomes = ["cp_pedido", "cp_pedido_item", "tnfcanfen", "tnfcanfsa", "tnfitnfen", "tnfitnfsa"]
-
-# Retry progressivo (em segundos)
-valid_time = {1: 2, 2: 5, 5: 10, 10: 30, 30: 60, 60: 60}
-
-# Controle externo
-active_threads = []
-stop_event = threading.Event()
+stop_event = asyncio.Event()
+connect = None
 
 
 def stop_fdb():
     stop_event.set()
 
 
-def start_watcher(connect, time_delay):
-    def on_restart():
-        nonlocal time_delay
-        time_delay = valid_time[time_delay]
-        raise RuntimeError("Restart requested")
-
-    try:
-        time_delay = 1  # Reset tempo após sucesso
-
-        while True:
-            eventos = connect.event_conduit(event_nomes)
-            eventos.begin()
-            result = eventos.wait()
-            eventos.close()
-
-            for nome, event in result.items():
-                if event > 0:
-                    print(f"realtime/firebird/{nome}", flush=True)
-
-    except KeyboardInterrupt:
-        print("Interrompido manualmente", flush=True)
-        raise
-    except Exception as e:
-        print(f"Erro em watch: {e}", flush=True)
-        on_restart()
-
-
-def main_fdb(dsn: str, user: str, password: str):
-    global active_threads
+async def start_watcher(dsn: str, user: str, password: str, manager: ConnectionManager):
+    global connect
     time_delay = 1
+    valid_time = {1: 2, 2: 5, 5: 10, 10: 30, 30: 60, 60: 60}
+    event_nomes = ["usuarios", "pedidos", "vendas"]
 
     while not stop_event.is_set():
-        stop_event.clear()
-
         print(f"📡 Iniciando realtime_fdb! (delay: {time_delay}s)", flush=True)
-        connect = fdb.connect(dsn=dsn, user=user, password=password)
-        thread = threading.Thread(
-            target=start_watcher,
-            args=(connect, time_delay),
-            daemon=True
-        )
-        thread.start()
-        active_threads.append(thread)
 
-        while thread.is_alive() and not stop_event.is_set():
-            time.sleep(1)
+        try:
+            connect = fdb.connect(dsn=dsn, user=user, password=password)
+            tasks_event = []
+            time_delay = 1
 
-        if stop_event.is_set():
+            async def while_event():
+                tasks_event = None
+                try:
+                    while not stop_event.is_set():
+                        eventos = connect.event_conduit(event_nomes)
+                        eventos.begin()
+                        tasks_event = await asyncio.to_thread(eventos.wait, 1)
+                        eventos.close()
+
+                        for nome, event in tasks_event.items():
+                            if event > 0:
+                                realtime = f"firebird/{nome}"
+                                # print(realtime, flush=True)
+                                await manager.broadcast({"event": "realtime", "message": realtime})
+
+                except:
+                    eventos.close()
+                    pass
+
+            tasks_event.append(asyncio.create_task(while_event()))
+
+            await asyncio.gather(*tasks_event)
+
+        except asyncio.CancelledError:
             break
 
-        print(f"🔄 Reiniciando Firebird em {time_delay}s...\n", flush=True)
-        time.sleep(time_delay)
+        except fdb.Error as e:
+            print(f"❌ FDB Erro geral: {e}", flush=True)
+            time_delay = valid_time.get(time_delay, 60)
+            print(f"🔄 Reiniciando Firebird em {time_delay}s...\n", flush=True)
+            await asyncio.sleep(time_delay)
 
-    print("🛑 Watcher realtime_fdb finalizado!", flush=True)
+        finally:
+            if connect and not connect.closed:
+                connect.close()
+
+    stop_event.clear()
+    # print("🛑 Watcher realtime_fdb finalizado!", flush=True)
+
+
+async def main_fdb(dsn: str, user: str, password: str, manager: ConnectionManager):
+    global stop_event
+    stop_event.clear()
+    task = asyncio.create_task(start_watcher(dsn, user, password, manager))
+
+    try:
+        await stop_event.wait()
+        print("🛑 FDB Sinal de parada recebido")
+        task.cancel()
+        await task
+
+    except asyncio.CancelledError:
+        await asyncio.wait([task], timeout=1)
+        psutil.Process(os.getpid()).terminate()
+        print("🛑 FDB Watcher cancelado", flush=True)

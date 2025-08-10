@@ -1,92 +1,92 @@
 # src/utils/realtime_mdb.py
+import os
+import psutil
 import asyncio
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo.errors import PyMongoError
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
+from src.app.core.websocket import ConnectionManager
 
-# Bancos que não serão monitorados
-dbs_ignorados = {"admin", "config", "local"}
-
-# Retry progressivo (em segundos)
-valid_time = {1: 2, 2: 5, 5: 10, 10: 30, 30: 60, 60: 60}
-
-# Controle externo
 stop_event = asyncio.Event()
+client = None
 
 
 def stop_mdb():
     stop_event.set()
 
 
-async def start_watcher(uri: str, time_delay: int):
-    client = AsyncIOMotorClient(uri)
-
-    async def on_restart():
-        nonlocal time_delay
-        time_delay = valid_time.get(time_delay, 60)
-        stop_event.set()
-
-    async def on_change(change_stream):
-        async for change in change_stream:
-            ns = change.get("ns")
-            if ns:
-                realtime = f"{ns['db']}/{ns['coll']}"
-                print(f"realtime/{realtime}", flush=True)
-                # await manager.broadcast(f"realtime/{realtime}")
-
-            if stop_event.is_set():
-                await change_stream.close()
-                break
-
-    try:
-        dbs_info = await client.admin.command("listDatabases")
-        databases = dbs_info["databases"]
-        time_delay = 1
-        tasks = []
-
-        for db_info in databases:
-            db_name = db_info["name"]
-            if db_name in dbs_ignorados:
-                continue
-
-            db = client[db_name]
-            colls = await db.list_collection_names()
-            for coll_name in colls:
-                collection = db[coll_name]
-                change_stream = collection.watch()
-                tasks.append(asyncio.create_task(on_change(change_stream)))
-
-        # Aguarda todas as tasks terminarem (ou o stop_event ser ativado)
-        await asyncio.gather(*tasks)
-
-    except asyncio.CancelledError:
-        print("🛑 Interrompido manualmente", flush=True)
-        raise
-    except Exception as e:
-        if not stop_event.is_set():
-            print(f"❌ Erro geral: {e}", flush=True)
-            await on_restart()
-        else:
-            client.close()
-
-
-async def main_mdb(uri: str):
-    global stop_event
+async def start_watcher(uri: str, manager: ConnectionManager):
+    global client
     time_delay = 1
+    valid_time = {1: 2, 2: 5, 5: 10, 10: 30, 30: 60, 60: 60}
+    dbs_ignorados = {"admin", "config", "local"}
 
     while not stop_event.is_set():
-        stop_event.clear()
-
         print(f"📡 Iniciando realtime_mdb! (delay: {time_delay}s)", flush=True)
-        task = asyncio.create_task(start_watcher(uri, time_delay))
 
         try:
-            await task
-        except asyncio.CancelledError:
-            print("🛑 Watcher cancelado", flush=True)
+            client = AsyncIOMotorClient(uri)
+            dbs_info = await client.admin.command("listDatabases")
+            databases = dbs_info["databases"]
+            tasks_watch = []
+            time_delay = 1
 
-        if stop_event.is_set():
+            async def watch_collection(collection: AsyncIOMotorCollection):
+                try:
+                    async with collection.watch() as change_stream:
+                        async for change in change_stream:
+                            ns = change.get("ns")
+                            if ns:
+                                realtime = f"{ns['db']}/{ns['coll']}"
+                                # print(realtime, flush=True)
+                                await manager.broadcast({"event": "realtime", "message": realtime})
+
+                            if stop_event.is_set():
+                                break
+                except:
+                    pass
+
+            for db_info in databases:
+                db_name = db_info["name"]
+                if db_name in dbs_ignorados:
+                    continue
+
+                db = client[db_name]
+                colls = await db.list_collection_names()
+                for coll_name in colls:
+                    collection = db[coll_name]
+                    tasks_watch.append(asyncio.create_task(watch_collection(collection)))
+
+            await asyncio.gather(*tasks_watch)
+
+        except asyncio.CancelledError:
             break
 
-        print(f"🔄 Reiniciando MongoDB em {time_delay}s...\n", flush=True)
-        await asyncio.sleep(time_delay)
+        except PyMongoError as e:
+            print(f"❌ MDB Erro geral: {e}", flush=True)
+            time_delay = valid_time.get(time_delay, 60)
+            print(f"🔄 Reiniciando MongoDB em {time_delay}s...\n", flush=True)
+            await asyncio.sleep(time_delay)
 
-    print("🛑 Watcher realtime_mdb finalizado!", flush=True)
+        finally:
+            if client:
+                client.close()
+
+    stop_event.clear()
+    # print("🛑 Watcher realtime_mdb finalizado!", flush=True)
+
+
+async def main_mdb(uri: str, manager: ConnectionManager):
+    global stop_event
+    stop_event.clear()
+    task = asyncio.create_task(start_watcher(uri, manager))
+
+    try:
+        await stop_event.wait()
+        print("🛑 MDB Sinal de parada recebido")
+        task.cancel()
+        await task
+
+    except asyncio.CancelledError:
+        await asyncio.wait([task], timeout=1)
+        psutil.Process(os.getpid()).terminate()
+        print("🛑 MDB Watcher cancelado", flush=True)

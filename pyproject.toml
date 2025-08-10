@@ -4,13 +4,17 @@ version = "0.1.0"
 description = "Api Rest Python com MongoDB"
 authors = [{ name = "ansergio", email = "ansergio@hotmail.com" }]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = "==3.12.*"
 dependencies = [
   "fastapi>=0.116.1",
+  "fastapi-limiter>=0.1.6",
   "fdb>=2.0.4",
   "motor>=3.7.1",
+  "psutil>=7.0.0",
   "pyinstaller>=6.15.0",
+  "pypdf2>=3.0.1",
   "python-jose>=3.5.0",
+  "redis>=6.4.0",
   "uvicorn[standard]>=0.35.0",
 ]
 

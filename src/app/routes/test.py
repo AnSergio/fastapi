@@ -1,10 +1,12 @@
 from fastapi import APIRouter
-# from src.app.routes.socketio import sio
+from src.app.core.websocket import manager
+
 
 router = APIRouter()
 
 
 @router.get("/test")
 async def test_ws():
-    # await sio.emit("realtime", "acesso/usuarios")
+    print(f"Test", flush=True)
+    await manager.broadcast({"event": "teste", "user": "teste"})
     return {"status": "ok"}

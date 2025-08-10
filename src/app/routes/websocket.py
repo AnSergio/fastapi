@@ -8,28 +8,29 @@ router = APIRouter()
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    token = None
-    # Extrai o protocolo e token do cabeçalho
-    if websocket.headers.get("sec-websocket-protocol"):
-        token = websocket.headers.get("sec-websocket-protocol", "").replace("Bearer, ", "")
+    # Extrai o token do subprotocol
+    raw_protocol = websocket.headers.get("sec-websocket-protocol", "")
+    token = raw_protocol.replace("Bearer, ", "").strip()
 
     if not token:
-        await websocket.close(code=1008)
+        await websocket.close(code=1008, reason="Token não fornecido")
         return
 
-    # Valida o Token JWT
+    # Valida token JWT
     user = verificar_token(token)
-
     if not user:
-        await websocket.close(code=4001)
+        await websocket.close(code=4001, reason="Token inválido ou expirado")
         return
 
-    # Aceita conexão com o mesmo subprotocol enviado
+    # Conecta cliente
     try:
-        await manager.connect(websocket)
-        print(f"Client: {user}")
-        await manager.broadcast(f"Client: {user}")
+        await manager.connect(websocket, subprotocol="Bearer")
+        print(f"✅ Conectado: {user}", flush=True)
+
+        while True:
+            await websocket.receive_text()
+            # print(f"✅ Conectado: {user}", flush=True)
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-        print("❌ Cliente desconectado")
+        await manager.broadcast({"event": "user_disconnected", "_id": user["_id"], "user": user["user"]})

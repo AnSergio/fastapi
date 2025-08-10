@@ -1,3 +1,4 @@
+# src/app/schemas/mongodb.py
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
@@ -10,15 +11,15 @@ class AggregateRequest(BaseModel):
 
 
 class DeleteRequest(BaseModel):
-    db: str
-    coll: str
+    db: str = Field(..., description="Nome do banco de dados")
+    coll: str = Field(..., description="Nome da coleção")
     query: Dict = Field(..., alias="query")
     options: Optional[dict] = None
 
 
 class FindRequest(BaseModel):
-    db: str
-    coll: str
+    db: str = Field(..., description="Nome do banco de dados")
+    coll: str = Field(..., description="Nome da coleção")
     filter: Dict = Field(..., alias="filter")
     replacement: Optional[dict] = None
     update: Optional[dict] = None
@@ -26,16 +27,16 @@ class FindRequest(BaseModel):
 
 
 class InsertRequest(BaseModel):
-    db: str
-    coll: str
+    db: str = Field(..., description="Nome do banco de dados")
+    coll: str = Field(..., description="Nome da coleção")
     doc: Optional[dict] = None
     docs: Optional[List[dict]] = None
     options: Optional[dict] = None
 
 
 class UpdateRequest(BaseModel):
-    db: str
-    coll: str
+    db: str = Field(..., description="Nome do banco de dados")
+    coll: str = Field(..., description="Nome da coleção")
     query: Dict = Field(..., alias="query")
     update: Optional[dict] = None
     options: Optional[dict] = None
