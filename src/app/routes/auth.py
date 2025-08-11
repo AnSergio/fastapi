@@ -51,7 +51,7 @@ async def auth(credentials: HTTPBasicCredentials = Depends(on_basic_auth)):
         doc = convert_id(doc)
         # print(f"doc: {doc}")
 
-        token = criar_token({"_id": str(doc["_id"]), "user": credentials.username})
+        token = criar_token({"_id": str(doc["_id"]), "nome": credentials.username})
 
         usuario = {
             "_id": str(doc["_id"]),

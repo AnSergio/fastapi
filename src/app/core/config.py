@@ -15,7 +15,7 @@ class Config:
     url = os.getenv("DB_URLS", "redis://127.0.0.1:6379")
     uri = os.getenv("DB_URIS", "mongodb://teste:teste@127.0.0.1:27017/")
     dns = os.getenv("DB_UDNS", "127.0.0.1:/home/firebird/dados.fdb")
-    user = os.getenv("DB_USER", "sysdba")
+    user = os.getenv("DB_USER", "SYSDBA")
     password = os.getenv("DB_PASS", "masterkey")
 
 

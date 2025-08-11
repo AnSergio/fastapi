@@ -16,8 +16,8 @@ async def on_pdf_text_1(body: PdfTextRequest):
     tex: str = ""
     encod = body.encod or "utf-8"
 
-    if not body.db or not body.coll or not body.base64:
-        raise HTTPException(status_code=400, detail="Banco de dados, coleção e base64 são necessários!")
+    if not body.base64:
+        raise HTTPException(status_code=400, detail="base64 é necessários!")
 
     try:
         pdf_data = base64.b64decode(body.base64)

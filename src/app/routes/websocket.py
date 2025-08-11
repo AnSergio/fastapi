@@ -6,7 +6,7 @@ from src.app.core.websocket import manager
 router = APIRouter()
 
 
-@router.websocket("/ws")
+@router.websocket("/")
 async def websocket_endpoint(websocket: WebSocket):
     # Extrai o token do subprotocol
     raw_protocol = websocket.headers.get("sec-websocket-protocol", "")
@@ -33,4 +33,4 @@ async def websocket_endpoint(websocket: WebSocket):
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-        await manager.broadcast({"event": "user_disconnected", "_id": user["_id"], "user": user["user"]})
+        await manager.broadcast({"event": "user_disconnected", "_id": user["_id"], "nome": user["nome"]})

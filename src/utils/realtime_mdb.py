@@ -1,17 +1,19 @@
 # src/utils/realtime_mdb.py
-import os
-import psutil
+# import os
+# import psutil
 import asyncio
 from pymongo.errors import PyMongoError
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 from src.app.core.websocket import ConnectionManager
 
 stop_event = asyncio.Event()
+# process = psutil.Process(os.getpid())
 client = None
 
 
 def stop_mdb():
     stop_event.set()
+    # process.terminate()
 
 
 async def start_watcher(uri: str, manager: ConnectionManager):
@@ -71,22 +73,20 @@ async def start_watcher(uri: str, manager: ConnectionManager):
             if client:
                 client.close()
 
-    stop_event.clear()
     # print("🛑 Watcher realtime_mdb finalizado!", flush=True)
 
 
 async def main_mdb(uri: str, manager: ConnectionManager):
     global stop_event
     stop_event.clear()
-    task = asyncio.create_task(start_watcher(uri, manager))
 
     try:
+        task = asyncio.create_task(start_watcher(uri, manager))
         await stop_event.wait()
         print("🛑 MDB Sinal de parada recebido")
         task.cancel()
         await task
-
     except asyncio.CancelledError:
-        await asyncio.wait([task], timeout=1)
-        psutil.Process(os.getpid()).terminate()
-        print("🛑 MDB Watcher cancelado", flush=True)
+        pass
+    finally:
+        print("✅ MDB Watcher finalizado")
