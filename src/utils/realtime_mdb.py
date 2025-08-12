@@ -1,22 +1,18 @@
 # src/utils/realtime_mdb.py
-# import os
-# import psutil
 import asyncio
 from pymongo.errors import PyMongoError
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 from src.app.core.websocket import ConnectionManager
 
 stop_event = asyncio.Event()
-# process = psutil.Process(os.getpid())
 client = None
 
 
 def stop_mdb():
     stop_event.set()
-    # process.terminate()
 
 
-async def start_watcher(uri: str, manager: ConnectionManager):
+async def start_mdb(uri: str, manager: ConnectionManager):
     global client
     time_delay = 1
     valid_time = {1: 2, 2: 5, 5: 10, 10: 30, 30: 60, 60: 60}
@@ -29,7 +25,7 @@ async def start_watcher(uri: str, manager: ConnectionManager):
             client = AsyncIOMotorClient(uri)
             dbs_info = await client.admin.command("listDatabases")
             databases = dbs_info["databases"]
-            tasks_watch = []
+            tasks = []
             time_delay = 1
 
             async def watch_collection(collection: AsyncIOMotorCollection):
@@ -56,11 +52,12 @@ async def start_watcher(uri: str, manager: ConnectionManager):
                 colls = await db.list_collection_names()
                 for coll_name in colls:
                     collection = db[coll_name]
-                    tasks_watch.append(asyncio.create_task(watch_collection(collection)))
+                    tasks.append(asyncio.create_task(watch_collection(collection)))
 
-            await asyncio.gather(*tasks_watch)
+            await asyncio.gather(*tasks)
 
         except asyncio.CancelledError:
+            tasks.clear()
             break
 
         except PyMongoError as e:
@@ -79,14 +76,13 @@ async def start_watcher(uri: str, manager: ConnectionManager):
 async def main_mdb(uri: str, manager: ConnectionManager):
     global stop_event
     stop_event.clear()
-
+    task = asyncio.create_task(start_mdb(uri, manager))
     try:
-        task = asyncio.create_task(start_watcher(uri, manager))
         await stop_event.wait()
-        print("🛑 MDB Sinal de parada recebido")
         task.cancel()
         await task
     except asyncio.CancelledError:
-        pass
+        task.cancel()
+        await task
     finally:
         print("✅ MDB Watcher finalizado")

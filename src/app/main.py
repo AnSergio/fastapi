@@ -1,10 +1,10 @@
 # src/main.py
 import asyncio
 from fastapi import Depends, FastAPI
-from contextlib import asynccontextmanager
-from fastapi_limiter.depends import RateLimiter
 from fastapi.middleware.cors import CORSMiddleware
-from src.app.routes import test, websocket, auth, mongodb, pdftext
+from fastapi_limiter.depends import RateLimiter
+from contextlib import asynccontextmanager
+from src.app.routes import websocket, auth, mongodb, pdftext, comandos
 from src.app.core.security import on_bearer_auth
 from src.utils.rate_limit import redis_url
 from src.utils.realtime_fdb import main_fdb, stop_fdb
@@ -49,15 +49,18 @@ app.add_middleware(
 )
 
 
+app.include_router(
+    websocket.router,
+    tags=["WebSocket"],
+    dependencies=[Depends(RateLimiter(times=100, seconds=60))]
+)
+
 # Rotas organizadas
-app.include_router(test.router)
-
-app.include_router(websocket.router)
-
 app.include_router(
     auth.router,
     prefix="/auth",
-    dependencies=[Depends(RateLimiter(times=2, seconds=10))]
+    tags=["Autenticação"],
+    dependencies=[Depends(RateLimiter(times=6, seconds=60))]
 )
 
 app.include_router(
@@ -70,7 +73,14 @@ app.include_router(
 app.include_router(
     pdftext.router,
     prefix="/pdf",
-    tags=["PDFs"],
+    tags=["PDFtoTEXT"],
+    dependencies=[Depends(on_bearer_auth), Depends(RateLimiter(times=150, seconds=60))]
+)
+
+app.include_router(
+    comandos.router,
+    prefix="/comando",
+    tags=["Comandos linux e win"],
     dependencies=[Depends(on_bearer_auth), Depends(RateLimiter(times=150, seconds=60))]
 )
 

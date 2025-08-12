@@ -15,7 +15,6 @@ security = HTTPBasic()
 
 @router.get(
     "/",
-    tags=["Autenticação"],
     summary="Autenticar usuário",
     description=description,
     response_model=AuthResponse,

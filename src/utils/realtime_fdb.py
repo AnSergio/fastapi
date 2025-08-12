@@ -1,18 +1,7 @@
 # src/utils/realtime_fdb.py
-import os
 import fdb
-import sys
 import asyncio
 from src.app.core.websocket import ConnectionManager
-
-path = os.path.join(os.path.dirname(__file__), "libs")
-print("path:", path)
-
-if sys.platform == "win32":
-    os.add_dll_directory(path)
-    os.environ["PATH"] = os.environ.get("PATH", "") + os.pathsep + path
-elif sys.platform == "linux":
-    os.environ["LD_LIBRARY_PATH"] = os.environ.get("LD_LIBRARY_PATH", "") + os.pathsep + path
 
 
 stop_event = asyncio.Event()
@@ -23,7 +12,7 @@ def stop_fdb():
     stop_event.set()
 
 
-async def start_watcher(dsn: str, user: str, password: str, manager: ConnectionManager):
+async def start_fdb(dsn: str, user: str, password: str, manager: ConnectionManager):
     global connect
     time_delay = 1
     valid_time = {1: 2, 2: 5, 5: 10, 10: 30, 30: 60, 60: 60}
@@ -34,24 +23,33 @@ async def start_watcher(dsn: str, user: str, password: str, manager: ConnectionM
 
         try:
             connect = fdb.connect(dsn=dsn, user=user, password=password)
-            tasks_event = None
+            tasks = []
             time_delay = 1
 
-            while not stop_event.is_set():
-                eventos = connect.event_conduit(event_nomes)
-                eventos.begin()
-                tasks_event = await asyncio.to_thread(eventos.wait, 1)
-                eventos.close()
-                for nome, event in tasks_event.items():
-                    if event > 0:
-                        realtime = f"firebird/{nome}"
-                        print(realtime, flush=True)
-                        await manager.broadcast({"event": "realtime", "message": realtime})
+            async def watch_post():
+                eventos = None
+                try:
+                    while not stop_event.is_set():
+                        eventos = connect.event_conduit(event_nomes)
+                        eventos.begin()
+                        tasks_event = await asyncio.to_thread(eventos.wait, 1)
+                        eventos.close()
+                        for nome, event in tasks_event.items():
+                            if event > 0:
+                                realtime = f"firebird/{nome}"
+                                print(realtime, flush=True)
+                                await manager.broadcast({"event": "realtime", "message": realtime})
 
-            await asyncio.gather(*tasks_event)
+                except:
+                    tasks_event.clear()
+                    eventos.close()
+                    eventos = None
+
+            tasks.append(asyncio.create_task(watch_post()))
+            await asyncio.gather(*tasks)
 
         except asyncio.CancelledError:
-            eventos.close()
+            tasks.clear()
             break
 
         except fdb.Error as e:
@@ -70,14 +68,13 @@ async def start_watcher(dsn: str, user: str, password: str, manager: ConnectionM
 async def main_fdb(dsn: str, user: str, password: str, manager: ConnectionManager):
     global stop_event
     stop_event.clear()
-
+    task = asyncio.create_task(start_fdb(dsn, user, password, manager))
     try:
-        task = asyncio.create_task(start_watcher(dsn, user, password, manager))
         await stop_event.wait()
-        print("🛑 FDB Sinal de parada recebido")
         task.cancel()
         await task
     except asyncio.CancelledError:
-        pass
+        task.cancel()
+        await task
     finally:
         print("✅ FDB Watcher finalizado")
