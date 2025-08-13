@@ -1,10 +1,12 @@
 # src/main.py
+
 import asyncio
+import os
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_limiter.depends import RateLimiter
 from contextlib import asynccontextmanager
-from src.app.routes import websocket, auth, mongodb, pdftext, comandos
+from src.app.routes import websocket, auth, mongodb, firebird, pdftext, comandos
 from src.app.core.security import on_bearer_auth
 from src.utils.rate_limit import redis_url
 from src.utils.realtime_fdb import main_fdb, stop_fdb
@@ -23,7 +25,6 @@ async def lifespan(app: FastAPI):
 
     yield
     # shutdown
-    print(f"🟥 {app.title} está finalizando!")
     stop_fdb()
     stop_mdb()
     for task in [task_redis, task_fdb, task_mdb]:
@@ -33,6 +34,7 @@ async def lifespan(app: FastAPI):
                 await task
             except asyncio.CancelledError:
                 pass
+    print(f"🟥 {app.title} está finalizando!")
 
 
 # Cria app FastAPI
@@ -51,8 +53,7 @@ app.add_middleware(
 
 app.include_router(
     websocket.router,
-    tags=["WebSocket"],
-    dependencies=[Depends(RateLimiter(times=100, seconds=60))]
+    tags=["WebSocket"]
 )
 
 # Rotas organizadas
@@ -65,8 +66,15 @@ app.include_router(
 
 app.include_router(
     mongodb.router,
-    prefix="/mongodb",
+    prefix="/mdb",
     tags=["MongoDB"],
+    dependencies=[Depends(on_bearer_auth), Depends(RateLimiter(times=150, seconds=60))]
+)
+
+app.include_router(
+    firebird.router,
+    prefix="/fdb",
+    tags=["Firebird Sql"],
     dependencies=[Depends(on_bearer_auth), Depends(RateLimiter(times=150, seconds=60))]
 )
 

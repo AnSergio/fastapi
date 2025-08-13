@@ -6,7 +6,7 @@ from src.app.core.websocket import manager
 router = APIRouter()
 
 
-@router.websocket("/")
+@router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     # Extrai o token do subprotocol
     raw_protocol = websocket.headers.get("sec-websocket-protocol", "")

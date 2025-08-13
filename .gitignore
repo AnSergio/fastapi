@@ -18,6 +18,11 @@ wheels/
 .env/
 .uv/
 
+# Local e Sql
+src/local/*.py
+src/sql/*.sql
+!src/local/test.py
+!src/sql/test.sql
 
 # VSCode / IDE configs
 .vscode/
