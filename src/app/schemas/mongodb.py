@@ -10,33 +10,53 @@ class AggregateRequest(BaseModel):
     options: Optional[Dict[str, Any]] = Field(default=None, description="Opções adicionais para agregação")
 
 
-class DeleteRequest(BaseModel):
+class DeletesRequest(BaseModel):
     db: str = Field(..., description="Nome do banco de dados")
     coll: str = Field(..., description="Nome da coleção")
     query: Dict = Field(..., alias="query")
     options: Optional[dict] = None
 
 
-class FindRequest(BaseModel):
+class FindsRequest(BaseModel):
     db: str = Field(..., description="Nome do banco de dados")
     coll: str = Field(..., description="Nome da coleção")
     filter: Dict = Field(..., alias="filter")
-    replacement: Optional[dict] = None
-    update: Optional[dict] = None
+    options: Optional[dict] = None
+
+
+class FindReplaceRequest(BaseModel):
+    db: str = Field(..., description="Nome do banco de dados")
+    coll: str = Field(..., description="Nome da coleção")
+    filter: Dict = Field(..., alias="filter")
+    replacement: Dict = Field(..., alias="replace")
+    options: Optional[dict] = None
+
+
+class FindUpdateRequest(BaseModel):
+    db: str = Field(..., description="Nome do banco de dados")
+    coll: str = Field(..., description="Nome da coleção")
+    filter: Dict = Field(..., alias="filter")
+    update: Dict = Field(..., alias="update")
     options: Optional[dict] = None
 
 
 class InsertRequest(BaseModel):
     db: str = Field(..., description="Nome do banco de dados")
     coll: str = Field(..., description="Nome da coleção")
-    doc: Optional[dict] = None
-    docs: Optional[List[dict]] = None
+    doc: Dict = Field(..., alias="Doc")
     options: Optional[dict] = None
 
 
-class UpdateRequest(BaseModel):
+class InsertManyRequest(BaseModel):
+    db: str = Field(..., description="Nome do banco de dados")
+    coll: str = Field(..., description="Nome da coleção")
+    docs: List[dict] = Field(..., description="docs")
+    options: Optional[dict] = None
+
+
+class UpdatesRequest(BaseModel):
     db: str = Field(..., description="Nome do banco de dados")
     coll: str = Field(..., description="Nome da coleção")
     query: Dict = Field(..., alias="query")
-    update: Optional[dict] = None
+    update: Dict = Field(..., alias="update")
     options: Optional[dict] = None

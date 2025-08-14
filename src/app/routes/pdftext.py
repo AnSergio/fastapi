@@ -45,13 +45,7 @@ async def on_pdf_text_1(body: PdfTextRequest):
     except UnicodeDecodeError as e:
         raise HTTPException(status_code=400, detail=f"Erro de codificação: {str(e)}")
     except Exception as e:
-        try:
-            status, detail = str(e).split(": ", 1)
-            status = int(status.strip())
-        except Exception:
-            status = 500
-            detail = "Internal Server Error"
-        raise HTTPException(status_code=status, detail=detail.strip())
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/pdftext2")

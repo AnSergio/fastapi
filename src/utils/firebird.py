@@ -1,9 +1,8 @@
 # src/utils/firebird.py
 import os
 import inspect
-import traceback
-import importlib.util
-from typing import Any, Callable
+from importlib import util
+from typing import Callable, List
 from src.app.core.config import user, password
 
 
@@ -12,94 +11,44 @@ sql_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "sql")
 # print(f"🚀 Pasta Sql: {sql}")
 
 
-def verifica_args(func) -> int:
-    sig = inspect.signature(func)
-    obrigatorios = [
-        p for p in sig.parameters.values()
-        if p.default is p.empty and p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
-    ]
-    return len(obrigatorios)
-
-
-def call_if_args_match(func_ref: Callable, *args) -> Any:
+def args_match(func_ref: Callable, *args, **kwargs):
     sig = inspect.signature(func_ref)
-    params = sig.parameters
+    params = list(sig.parameters.values())
+    args_enviados = len(args)
+    args_esperados = len(params)
+    args_params = [str(p) for p in params]
+    # print(f"args_match: args_enviados: {args_enviados}, args_esperados: {args_esperados}\n")
 
-    # Conta parâmetros obrigatórios (sem valor padrão)
-    required_params = [
-        p for p in params.values()
-        if p.default is inspect.Parameter.empty and
-        p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
-    ]
+    if not args_enviados == args_esperados:
+        raise TypeError(f"Consulata invalida, args_enviados: {args_enviados}, args_esperados: {args_esperados}, 'args': {args_params}")
 
-    if len(args) == len(required_params):
-        return func_ref(*args)
-    else:
-        return ""
+    return
 
 
-def on_local1(local: str, func: str, args=None) -> str:
+def on_local(local: str, func: str, args=None, kwargs=None) -> str:
     try:
+        args = args or []
+        kwargs = kwargs or {}
+
         path = os.path.join(local_dir, f"{local}.py")
         if not os.path.isfile(path):
             raise FileNotFoundError(f"Arquivo '{local}.py' não encontrado em {local_dir}")
 
-        spec = importlib.util.spec_from_file_location(local, path)
+        spec = util.spec_from_file_location(local, path)
         if spec is None or spec.loader is None:
             raise ImportError(f"Não foi possível criar o spec para {local}.py")
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        if not hasattr(module, func):
-            raise AttributeError(f"Função '{func}' não encontrada no módulo '{local}'")
-
-        func_ref = getattr(module, func)
-
-        sig = verifica_args(func_ref)
-
-        if not sig or not args:
-            print(f"🚀 not sig or not args: {sig, args}\n")
-            return func_ref()
-        elif sig or not args:
-            print(f"🚀 sig or not args: {sig, args}\n")
-            return FileNotFoundError(f"[on_local] Erro ao executar {local}.{func} falta args")
-
-        return func_ref(*args)
-
-    except:
-        raise FileNotFoundError(f"[on_local] Erro ao executar {local}.{func} com args={args}")
-
-
-def on_local(local: str, func: str, args=None) -> Any:
-    try:
-        path = os.path.join(local_dir, f"{local}.py")
-        if not os.path.isfile(path):
-            raise FileNotFoundError(f"Arquivo '{local}.py' não encontrado em {local_dir}")
-
-        spec = importlib.util.spec_from_file_location(local, path)
-        if spec is None or spec.loader is None:
-            raise ImportError(f"Não foi possível criar o spec para {local}.py")
-
-        module = importlib.util.module_from_spec(spec)
+        module = util.module_from_spec(spec)
         spec.loader.exec_module(module)
 
         if not hasattr(module, func):
             raise AttributeError(f"Função '{func}' não encontrada no módulo '{local}'")
 
         func_ref = getattr(module, func)
+        args_match(func_ref, *args, **kwargs)
 
-        obrigatorios = call_if_args_match(func_ref, args)
-        print(f"🚀 Obrigatorios: {obrigatorios}\n")
-
-        # Caso 1: função sem args obrigatórios
-        if obrigatorios == "":
-
-            return ""
-            raise TypeError(f"A função '{func}' exige {obrigatorios} argumento(s) obrigatório(s)")
-
-        return func_ref(*args)
-
+        return func_ref(*args, **kwargs)
     except Exception as e:
-        raise RuntimeError(f"[on_local] Erro ao executar {local}.{func} com args={args}") from e
+        raise RuntimeError(f"[on_local] Erro ao executar {local}.py, {func}: {e}")
 
 
 def on_sql(local: str) -> str:
@@ -125,8 +74,8 @@ def on_options(host: str, db: str):
     }
 
 
-sql = on_local("test", "usuario")
-print(f"🚀 Pasta Sql: {sql}\n")
+# sql = on_local("test", "usuario1", ["Sergio"])
+# print(f"🚀 on_local: {sql}\n")
 
 
 # except:

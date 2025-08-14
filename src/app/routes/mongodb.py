@@ -1,7 +1,8 @@
 # src/app/routes/mongodb.py
 from fastapi import APIRouter,  HTTPException
 from src.app.core.mongodb import convert_id,  convert_oid
-from src.app.schemas.mongodb import AggregateRequest, DeleteRequest, FindRequest, InsertRequest, UpdateRequest
+from src.app.schemas.mongodb import AggregateRequest, DeletesRequest, FindReplaceRequest, FindUpdateRequest, FindsRequest
+from src.app.schemas.mongodb import InsertRequest, InsertManyRequest, UpdatesRequest
 from src.app.core.config import client
 
 
@@ -24,8 +25,7 @@ async def on_aggregate(body: AggregateRequest):
     try:
         db = client[body.db]
         collection = db[body.coll]
-        cursor = await collection.aggregate(pipeline, **options)
-
+        cursor = collection.aggregate(pipeline, **options)
         result = []
         async for doc in cursor:
             doc = convert_id(doc)
@@ -36,17 +36,11 @@ async def on_aggregate(body: AggregateRequest):
         return result
 
     except Exception as e:
-        try:
-            status, detail = str(e).split(": ", 1)
-            status = int(status.strip())
-        except Exception:
-            status = 500
-            detail = "Internal Server Error"
-        raise HTTPException(status_code=status, detail=detail.strip())
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/delete")
-async def on_delete(body: DeleteRequest):
+async def on_delete(body: DeletesRequest):
     # print(f"body: {body}")
     query = convert_oid(body.query)
     options = body.options or {}
@@ -75,7 +69,7 @@ async def on_delete(body: DeleteRequest):
 
 
 @router.delete("/deletemany")
-async def on_delete_many(body: DeleteRequest):
+async def on_delete_many(body: DeletesRequest):
     # print(f"body: {body}")
     query = convert_oid(body.query)
     options = body.options or {}
@@ -94,17 +88,11 @@ async def on_delete_many(body: DeleteRequest):
         return {"deleted_count": result.deleted_count}
 
     except Exception as e:
-        try:
-            status, detail = str(e).split(": ", 1)
-            status = int(status.strip())
-        except Exception:
-            status = 500
-            detail = "Internal Server Error"
-        raise HTTPException(status_code=status, detail=detail.strip())
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/find")
-async def on_find(body: FindRequest):
+async def on_find(body: FindsRequest):
     # print(f"body: {body}")
     filter = convert_oid(body.filter)
     options = body.options or {}
@@ -128,17 +116,11 @@ async def on_find(body: FindRequest):
         return result
 
     except Exception as e:
-        try:
-            status, detail = str(e).split(": ", 1)
-            status = int(status.strip())
-        except Exception:
-            status = 500
-            detail = "Internal Server Error"
-        raise HTTPException(status_code=status, detail=detail.strip())
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/findone")
-async def on_find_one(body: FindRequest):
+async def on_find_one(body: FindsRequest):
     # print(f"body: {body}")
     filter = convert_oid(body.filter)
     options = body.options or {}
@@ -158,17 +140,11 @@ async def on_find_one(body: FindRequest):
         return result
 
     except Exception as e:
-        try:
-            status, detail = str(e).split(": ", 1)
-            status = int(status.strip())
-        except Exception:
-            status = 500
-            detail = "Internal Server Error"
-        raise HTTPException(status_code=status, detail=detail.strip())
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/finddelete")
-async def on_find_one_and_delete(body: FindRequest):
+async def on_find_one_and_delete(body: FindsRequest):
     # print(f"body: {body}")
     filter = convert_oid(body.filter)
     options = body.options or {}
@@ -188,17 +164,11 @@ async def on_find_one_and_delete(body: FindRequest):
         return result
 
     except Exception as e:
-        try:
-            status, detail = str(e).split(": ", 1)
-            status = int(status.strip())
-        except Exception:
-            status = 500
-            detail = "Internal Server Error"
-        raise HTTPException(status_code=status, detail=detail.strip())
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/findreplace")
-async def on_find_one_and_replace(body: FindRequest):
+async def on_find_one_and_replace(body: FindReplaceRequest):
     # print(f"body: {body}")
     filter = convert_oid(body.filter)
     replacement = body.replacement
@@ -219,17 +189,11 @@ async def on_find_one_and_replace(body: FindRequest):
         return result
 
     except Exception as e:
-        try:
-            status, detail = str(e).split(": ", 1)
-            status = int(status.strip())
-        except Exception:
-            status = 500
-            detail = "Internal Server Error"
-        raise HTTPException(status_code=status, detail=detail.strip())
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/findupdate")
-async def on_find_one_and_update(body: FindRequest):
+async def on_find_one_and_update(body: FindUpdateRequest):
     # print(f"body: {body}")
     filter = convert_oid(body.filter)
     update = body.update
@@ -250,13 +214,7 @@ async def on_find_one_and_update(body: FindRequest):
         return result
 
     except Exception as e:
-        try:
-            status, detail = str(e).split(": ", 1)
-            status = int(status.strip())
-        except Exception:
-            status = 500
-            detail = "Internal Server Error"
-        raise HTTPException(status_code=status, detail=detail.strip())
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/insert")
@@ -277,17 +235,11 @@ async def on_insert_one(body: InsertRequest):
         return {"inserted_id": inserted_id}
 
     except Exception as e:
-        try:
-            status, detail = str(e).split(": ", 1)
-            status = int(status.strip())
-        except Exception:
-            status = 500
-            detail = "Internal Server Error"
-        raise HTTPException(status_code=status, detail=detail.strip())
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/insertmany")
-async def on_insert_many(body: InsertRequest):
+async def on_insert_many(body: InsertManyRequest):
     # print(f"body: {body}")
     docs = body.docs
     options = body.options or {}
@@ -305,17 +257,11 @@ async def on_insert_many(body: InsertRequest):
         return {"inserted_ids": inserted_ids}
 
     except Exception as e:
-        try:
-            status, detail = str(e).split(": ", 1)
-            status = int(status.strip())
-        except Exception:
-            status = 500
-            detail = "Internal Server Error"
-        raise HTTPException(status_code=status, detail=detail.strip())
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.put("/update")
-async def on_update_one(body: UpdateRequest):
+async def on_update_one(body: UpdatesRequest):
     # print(f"body: {body}")
     query = convert_oid(body.query)
     update = body.update
@@ -335,17 +281,11 @@ async def on_update_one(body: UpdateRequest):
         return {"modified_count": result.modified_count}
 
     except Exception as e:
-        try:
-            status, detail = str(e).split(": ", 1)
-            status = int(status.strip())
-        except Exception:
-            status = 500
-            detail = "Internal Server Error"
-        raise HTTPException(status_code=status, detail=detail.strip())
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.put("/updatemany")
-async def on_update_many(body: UpdateRequest):
+async def on_update_many(body: UpdatesRequest):
     # print(f"body: {body}")
     query = convert_oid(body.query)
     update = body.update
@@ -365,10 +305,4 @@ async def on_update_many(body: UpdateRequest):
         return {"modified_count": result.modified_count}
 
     except Exception as e:
-        try:
-            status, detail = str(e).split(": ", 1)
-            status = int(status.strip())
-        except Exception:
-            status = 500
-            detail = "Internal Server Error"
-        raise HTTPException(status_code=status, detail=detail.strip())
+        raise HTTPException(status_code=500, detail=str(e))
