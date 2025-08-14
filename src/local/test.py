@@ -1,5 +1,8 @@
 def usuario(nome: str) -> str:
-    return f"""SELECT usuarioid FROM t_usuario WHERE nome = '{nome}';"""
+    try:
+        return f"""SELECT usuarioid FROM t_usuario WHERE nome = '{nome}';"""
+    except:
+        raise FileNotFoundError(f"Erro ao executar")
 
 
 def nome_idade(nome: str, idade: int):
