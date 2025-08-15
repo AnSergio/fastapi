@@ -2,7 +2,7 @@
 import os
 import inspect
 from importlib import util
-from typing import Callable, List
+from typing import Callable
 from src.app.core.config import user, password
 
 

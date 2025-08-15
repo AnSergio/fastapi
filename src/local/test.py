@@ -1,2 +1,2 @@
-def usuario(nome: str) -> str:
-    return f"""SELECT usuarioid FROM t_usuario WHERE nome = '{nome}';"""
+def current_timestamp(dia: int) -> str:
+    return f"""SELECT CURRENT_TIMESTAMP {dia} FROM RDB$DATABASE;"""
