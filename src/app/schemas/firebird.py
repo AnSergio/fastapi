@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class FirebirdRequest(BaseModel):
-    host: Optional[str] = "192.168.0.252"
+    host: Optional[str] = "192.168.0.254"
     db: str = Field(..., description="Banco de dados: /firebird/test.fdb")
     local: str = Field(..., description="Local do arquivo: test")
     func: Optional[str] = None
