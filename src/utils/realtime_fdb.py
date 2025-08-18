@@ -37,7 +37,7 @@ async def start_fdb(dsn: str, user: str, password: str, manager: ConnectionManag
                         for nome, event in tasks_event.items():
                             if event > 0:
                                 realtime = f"firebird/{nome}"
-                                print(realtime, flush=True)
+                                # print(realtime, flush=True)
                                 await manager.broadcast({"event": "realtime", "message": realtime})
 
                 except:

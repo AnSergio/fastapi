@@ -6,12 +6,12 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_limiter.depends import RateLimiter
 from contextlib import asynccontextmanager
-from src.app.routes import websocket, auth, mongodb, firebird, pdftext, comandos
+from src.app.routes import websocket, auth, songs, mongodb, firebird, pdftext, comandos
 from src.app.core.security import on_bearer_auth
 from src.utils.rate_limit import redis_url
 from src.utils.realtime_fdb import main_fdb, stop_fdb
 from src.utils.realtime_mdb import main_mdb, stop_mdb
-from src.app.core.config import url, uri, dns, user, password, host, port
+from src.app.core.config import host, port, rdb_url, fdb_dns, fdb_user, fdb_pass, mdb_uri
 from src.app.core.websocket import manager
 
 
@@ -19,9 +19,9 @@ from src.app.core.websocket import manager
 async def lifespan(app: FastAPI):
     # startup
     print(f"🌐 {app.title} em HTTP e WS http://{host}:{port} 🚀")
-    task_redis = asyncio.create_task(redis_url(url))
-    task_fdb = asyncio.create_task(main_fdb(dns, user, password, manager))
-    task_mdb = asyncio.create_task(main_mdb(uri, manager))
+    task_redis = asyncio.create_task(redis_url(rdb_url))
+    task_fdb = asyncio.create_task(main_fdb(fdb_dns, fdb_user, fdb_pass, manager))
+    task_mdb = asyncio.create_task(main_mdb(mdb_uri, manager))
 
     yield
     # shutdown
@@ -59,9 +59,14 @@ app.include_router(
 # Rotas organizadas
 app.include_router(
     auth.router,
-    prefix="/auth",
     tags=["Autenticação"],
     dependencies=[Depends(RateLimiter(times=6, seconds=60))]
+)
+
+app.include_router(
+    songs.router,
+    tags=["Mosicas"],
+    # dependencies=[Depends(RateLimiter(times=100, seconds=60))]
 )
 
 app.include_router(

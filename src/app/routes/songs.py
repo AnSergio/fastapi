@@ -1,0 +1,48 @@
+import os
+from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import FileResponse, StreamingResponse
+from src.utils.songs import songs_dir
+
+router = APIRouter()
+
+
+@router.get("/songs2")
+def get_song2(file: str = Query(..., description="Nome do arquivo .mp3")):
+    path = os.path.join(songs_dir, file)
+
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Arquivo não encontrado")
+
+    headers = {"Access-Control-Allow-Origin": "*"}
+    return FileResponse(
+        path,
+        media_type="audio/mpeg",
+        filename=file,
+        headers=headers
+    )
+
+
+@router.get("/songs")
+def get_song(file: str = Query(..., description="Nome do arquivo .mp3")):
+    path = os.path.join(songs_dir, file)
+
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Arquivo não encontrado")
+
+    def iterfile():
+        with open(path, mode="rb") as f:
+            yield from f
+
+    return StreamingResponse(
+        iterfile(),
+        media_type="audio/mpeg",
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
+
+
+@router.get("/songs/list")
+def list_songs():
+    print(f"songs_dir: {songs_dir}")
+    files = [f for f in os.listdir(songs_dir) if f.endswith(".mp3")]
+    print(f"files: {files}")
+    return {"songs": files}

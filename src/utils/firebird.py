@@ -3,7 +3,7 @@ import os
 import inspect
 from importlib import util
 from typing import Callable
-from src.app.core.config import user, password
+from src.app.core.config import fdb_user, fdb_pass
 
 
 local_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "local")
@@ -68,8 +68,8 @@ def on_options(host: str, db: str):
         "host": host,
         "port": 3050,
         "database": db,
-        "user": user,
-        "password": password,
+        "user": fdb_user,
+        "password": fdb_pass,
         "role": None,
     }
 
