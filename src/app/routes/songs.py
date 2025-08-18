@@ -42,7 +42,10 @@ def get_song(file: str = Query(..., description="Nome do arquivo .mp3")):
 
 @router.get("/songs/list")
 def list_songs():
-    print(f"songs_dir: {songs_dir}")
-    files = [f for f in os.listdir(songs_dir) if f.endswith(".mp3")]
-    print(f"files: {files}")
+    files = []
+    for root, _, filenames in os.walk(songs_dir):
+        for f in filenames:
+            if f.endswith(".mp3"):
+                rel_path = os.path.relpath(os.path.join(root, f), songs_dir)
+                files.append(rel_path)
     return {"songs": files}

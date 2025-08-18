@@ -19,7 +19,7 @@ class Config:
     mdb_uri = os.getenv("MDB_URI", "mongodb://teste:teste@127.0.0.1:27017/")
     # firebird
     fdb_dns = os.getenv("FDB_DNS", "127.0.0.1:/home/firebird/dados.fdb")
-    fdb_host = os.getenv("FDB_PASS", "127.0.0.1:/home/firebird/dados.fdb")
+    fdb_host = os.getenv("FDB_HOST", "127.0.0.1")
     fdb_user = os.getenv("FDB_USER", "SYSDBA")
     fdb_pass = os.getenv("FDB_PASS", "masterkey")
 

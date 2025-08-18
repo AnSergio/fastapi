@@ -24,13 +24,13 @@ docker-compose.yml
 .uv/
 
 # Local e Sql
-src/local/*.py
-src/sql/*.sql
+src/local/
+src/sql/
 !src/local/test.py
 !src/sql/test.sql
 
 # Mp3
-src/songs/*.mp3
+src/songs/
 !src/songs/test.mp3
 
 # VSCode / IDE configs
