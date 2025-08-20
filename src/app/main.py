@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
             try:
                 await task
             except asyncio.CancelledError:
-                pass
+                await task
     print(f"🟥 {app.title} está finalizando!")
 
 
@@ -65,8 +65,9 @@ app.include_router(
 
 app.include_router(
     songs.router,
+    prefix="/songs",
     tags=["Mosicas"],
-    # dependencies=[Depends(RateLimiter(times=100, seconds=60))]
+    dependencies=[Depends(on_bearer_auth), Depends(RateLimiter(times=30, seconds=60))]
 )
 
 app.include_router(
