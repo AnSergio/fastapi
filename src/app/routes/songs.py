@@ -6,17 +6,31 @@ from src.utils.songs import songs_dir
 router = APIRouter()
 
 
-def build_tree(path):
-    tree = {"name": os.path.basename(path), "files": [], "folders": []}
+def build_tree(path, id_counter=[1]):
+    node_id = id_counter[0]
+    id_counter[0] += 1
+
+    node = {
+        "id": node_id,
+        "title": os.path.basename(path),
+        "children": []
+    }
+
     try:
         for entry in os.scandir(path):
             if entry.is_dir():
-                tree["folders"].append(build_tree(entry.path))
+                node["children"].append(build_tree(entry.path, id_counter))
             elif entry.is_file() and entry.name.endswith(".mp3"):
-                tree["files"].append(entry.name)
+                file_id = id_counter[0]
+                id_counter[0] += 1
+                node["children"].append({
+                    "id": file_id,
+                    "title": entry.name
+                })
     except PermissionError:
         pass
-    return tree
+
+    return node
 
 
 @router.get("/music")
@@ -31,4 +45,4 @@ def get_song(file: str):
 
 @router.get("/list")
 def list_songs():
-    return build_tree(songs_dir)
+    return [build_tree(songs_dir)]
