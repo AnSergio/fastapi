@@ -50,19 +50,21 @@ async def on_basic_auth(request: Request):
 
 def on_bearer_auth(request: Request):
     bearer = request.headers.get("authorization")
-    if not bearer:
-        raise HTTPException(status_code=401, detail="Cabeçalho de autorização ausente")
+    token = None
 
-    if not bearer.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="Formato de autenticação inválido")
+    # tenta pegar do header
+    if bearer and bearer.lower().startswith("bearer "):
+        token = bearer.split(" ")[1]
+    else:
+        # tenta pegar da query
+        token = request.query_params.get("token")
 
-    token = bearer.split(" ")[1]
+    if not token:
+        raise HTTPException(status_code=401, detail="Token não encontrado")
 
     try:
         payload = jwt.decode(token, key, algorithms)
-        # print(f"payload: {payload}")
-        return payload  # Você pode retornar o usuário, claims, etc.
-
+        return payload
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
