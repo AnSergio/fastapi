@@ -13,37 +13,37 @@ class AggregateRequest(BaseModel):
 class DeletesRequest(BaseModel):
     db: str = Field(..., description="Nome do banco de dados")
     coll: str = Field(..., description="Nome da coleção")
-    query: Dict = Field(..., alias="query")
+    query: Dict = Field(..., description="query")
     options: Optional[dict] = None
 
 
 class FindsRequest(BaseModel):
     db: str = Field(..., description="Nome do banco de dados")
     coll: str = Field(..., description="Nome da coleção")
-    filter: Dict = Field(..., alias="filter")
+    filter: Dict = Field(..., description="filter")
     options: Optional[dict] = None
 
 
 class FindReplaceRequest(BaseModel):
     db: str = Field(..., description="Nome do banco de dados")
     coll: str = Field(..., description="Nome da coleção")
-    filter: Dict = Field(..., alias="filter")
-    replacement: Dict = Field(..., alias="replace")
+    filter: Dict = Field(..., description="filter")
+    replacement: Dict = Field(..., description="replace")
     options: Optional[dict] = None
 
 
 class FindUpdateRequest(BaseModel):
     db: str = Field(..., description="Nome do banco de dados")
     coll: str = Field(..., description="Nome da coleção")
-    filter: Dict = Field(..., alias="filter")
-    update: Dict = Field(..., alias="update")
+    filter: Dict = Field(..., description="filter")
+    update: Dict = Field(..., description="update")
     options: Optional[dict] = None
 
 
 class InsertRequest(BaseModel):
     db: str = Field(..., description="Nome do banco de dados")
     coll: str = Field(..., description="Nome da coleção")
-    doc: Dict = Field(..., alias="Doc")
+    doc: Dict = Field(..., description="Documento a ser inserido")
     options: Optional[dict] = None
 
 
@@ -57,6 +57,6 @@ class InsertManyRequest(BaseModel):
 class UpdatesRequest(BaseModel):
     db: str = Field(..., description="Nome do banco de dados")
     coll: str = Field(..., description="Nome da coleção")
-    query: Dict = Field(..., alias="query")
-    update: Dict = Field(..., alias="update")
+    query: Dict = Field(..., description="query")
+    update: Dict = Field(..., description="update")
     options: Optional[dict] = None
