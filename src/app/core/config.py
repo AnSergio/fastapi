@@ -22,6 +22,8 @@ class Config:
     fdb_host = os.getenv("FDB_HOST", "127.0.0.1")
     fdb_user = os.getenv("FDB_USER", "SYSDBA")
     fdb_pass = os.getenv("FDB_PASS", "masterkey")
+    # Songs
+    song_list = os.getenv("SONG_LIST", "/home/user/musicas")
 
 
 config = Config()
@@ -40,6 +42,6 @@ fdb_dns = config.fdb_dns
 fdb_host = config.fdb_host
 fdb_user = config.fdb_user
 fdb_pass = config.fdb_pass
-
+song_list = config.song_list
 
 client = AsyncIOMotorClient(mdb_uri)
