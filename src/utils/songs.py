@@ -1,8 +1,7 @@
 import os
+from src.app.core.config import song_list
 
-songs_root = os.path.join(os.path.dirname(os.path.dirname(__file__)))
-# print(f"songs_root: {songs_root}")
-songs_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "songs")
+# songs_path = os.path.join(song_list)
 # print(f"songs_path: {songs_path}")
 
 

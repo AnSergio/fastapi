@@ -10,14 +10,14 @@ class AggregateRequest(BaseModel):
     options: Optional[Dict[str, Any]] = Field(default=None, description="Opções adicionais para agregação")
 
 
-class DeletesRequest(BaseModel):
+class DeleteRequest(BaseModel):
     db: str = Field(..., description="Nome do banco de dados")
     coll: str = Field(..., description="Nome da coleção")
     query: Dict = Field(..., description="query")
     options: Optional[dict] = None
 
 
-class FindsRequest(BaseModel):
+class FindRequest(BaseModel):
     db: str = Field(..., description="Nome do banco de dados")
     coll: str = Field(..., description="Nome da coleção")
     filter: Dict = Field(..., description="filter")

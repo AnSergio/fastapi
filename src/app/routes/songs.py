@@ -1,15 +1,16 @@
 import os
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
-from src.utils.songs import folder_files, songs_path
+from src.app.core.config import song_list
+from src.utils.songs import folder_files
 
 router = APIRouter()
-# print(f"songs: {songs_root, songs_path}")
+# print(f"song_list: {song_list}")
 
 
 @router.get("/music")
 def get_music(file: str):
-    path = os.path.join(songs_path, file)
+    path = os.path.join(song_list, file)
 
     if not os.path.isfile(path):
         return {"error": "Arquivo não encontrado"}
@@ -19,6 +20,6 @@ def get_music(file: str):
 
 @router.get("/list")
 def list_songs():
-    list = folder_files(songs_path)
+    list = folder_files(song_list)
     # print(f"list: {list}")
     return list

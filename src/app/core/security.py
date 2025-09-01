@@ -4,7 +4,7 @@ from fastapi.security import HTTPBasic, HTTPBearer, HTTPBasicCredentials
 from fastapi import HTTPException, Request, status
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
-from src.app.core.config import key
+from src.app.core.config import key, song_key
 
 
 security_basic = HTTPBasic()
@@ -32,6 +32,7 @@ def verificar_token(token: str):
 
 async def on_basic_auth(request: Request):
     basic = request.headers.get("authorization")
+
     if not basic:
         raise HTTPException(status_code=401, detail="Cabeçalho de autorização ausente")
 
@@ -43,6 +44,32 @@ async def on_basic_auth(request: Request):
         decoded = base64.b64decode(encoded).decode("utf-8")
         username, password = decoded.split(":", 1)
         return HTTPBasicCredentials(username=username, password=password)
+
+    except Exception:
+        raise HTTPException(status_code=400, detail="Basic malformado")
+
+
+async def on_basic_songs(request: Request):
+    basic = request.headers.get("authorization")
+    token = None
+
+    if not basic.lower().startswith("basic "):
+        raise HTTPException(status_code=400, detail="Formato de autenticação inválido")
+
+    try:
+        if basic and basic.lower().startswith("basic "):
+            encoded = basic.split(" ")[1]
+            token = base64.b64decode(encoded).decode("utf-8").replace(":", "")
+        else:
+            token = request.query_params.get("token")
+
+        if not token:
+            raise HTTPException(status_code=401, detail="Token não encontrado")
+
+        if token != song_key:
+            raise HTTPException(status_code=401, detail="Token inválido")
+
+        return token
 
     except Exception:
         raise HTTPException(status_code=400, detail="Basic malformado")

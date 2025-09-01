@@ -35,7 +35,7 @@ async def auth(credentials: HTTPBasicCredentials = Depends(on_basic_auth)):
     try:
         db = client["acesso"]
         collection = db["usuarios"]
-        cursor = collection.aggregate(pipeline)
+        cursor = await collection.aggregate(pipeline)
 
         doc = await anext(cursor, None)
         if not doc:

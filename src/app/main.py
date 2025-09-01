@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi_limiter.depends import RateLimiter
 from contextlib import asynccontextmanager
 from src.app.routes import websocket, auth, songs, mongodb, firebird, pdftext, comandos
-from src.app.core.security import on_bearer_auth
+from src.app.core.security import on_basic_songs, on_bearer_auth
 from src.utils.rate_limit import redis_url
 from src.utils.realtime_fdb import main_fdb, stop_fdb
 from src.utils.realtime_mdb import main_mdb, stop_mdb
@@ -65,9 +65,9 @@ app.include_router(
 
 app.include_router(
     songs.router,
-    prefix="/songs",
+    prefix="/song",
     tags=["Mosicas"],
-    dependencies=[Depends(on_bearer_auth), Depends(RateLimiter(times=30, seconds=60))]
+    dependencies=[Depends(on_basic_songs), Depends(RateLimiter(times=30, seconds=60))]
 )
 
 app.include_router(

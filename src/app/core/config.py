@@ -1,7 +1,7 @@
 # src/app/config.py
 import os
 from dotenv import load_dotenv
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import AsyncMongoClient
 
 
 load_dotenv()
@@ -23,6 +23,7 @@ class Config:
     fdb_user = os.getenv("FDB_USER", "SYSDBA")
     fdb_pass = os.getenv("FDB_PASS", "masterkey")
     # Songs
+    song_key = os.getenv("SONG_KEY", "song key")
     song_list = os.getenv("SONG_LIST", "/home/user/musicas")
 
 
@@ -42,6 +43,8 @@ fdb_dns = config.fdb_dns
 fdb_host = config.fdb_host
 fdb_user = config.fdb_user
 fdb_pass = config.fdb_pass
+# Songs
+song_key = config.song_key
 song_list = config.song_list
 
-client = AsyncIOMotorClient(mdb_uri)
+client = AsyncMongoClient(mdb_uri)

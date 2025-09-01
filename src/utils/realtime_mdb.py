@@ -1,11 +1,12 @@
 # src/utils/realtime_mdb.py
 import asyncio
+from pymongo import AsyncMongoClient
 from pymongo.errors import PyMongoError
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 from src.app.core.websocket import ConnectionManager
 
+
 stop_event = asyncio.Event()
-client = None
+client: AsyncMongoClient | None = None
 
 
 def stop_mdb():
@@ -16,44 +17,31 @@ async def start_mdb(uri: str, manager: ConnectionManager):
     global client
     time_delay = 1
     valid_time = {1: 2, 2: 5, 5: 10, 10: 30, 30: 60, 60: 60}
-    dbs_ignorados = {"admin", "config", "local"}
 
     while not stop_event.is_set():
         print(f"📡 Iniciando realtime_mdb! (delay: {time_delay}s)", flush=True)
 
         try:
-            client = AsyncIOMotorClient(uri)
-            dbs_info = await client.admin.command("listDatabases")
-            databases = dbs_info["databases"]
+            client = AsyncMongoClient(uri)
             tasks = []
-            time_delay = 1
+            time_delay = 1  # reset do backoff
 
-            async def watch_collection(collection: AsyncIOMotorCollection):
+            async def watch_change(client: AsyncMongoClient):
+                change_stream = await client.watch()
                 try:
-                    async with collection.watch() as change_stream:
-                        async for change in change_stream:
-                            ns = change.get("ns")
-                            if ns:
-                                realtime = f"{ns['db']}/{ns['coll']}"
-                                # print(realtime, flush=True)
-                                await manager.broadcast({"event": "realtime", "message": realtime})
+                    async for change in change_stream:
+                        ns = change.get("ns")
+                        if ns:
+                            realtime = f"{ns['db']}/{ns['coll']}"
+                            await manager.broadcast({"event": "realtime", "message": realtime})
+                            print(realtime, flush=True)
 
-                            if stop_event.is_set():
-                                break
-                except:
-                    pass
+                        if stop_event.is_set():
+                            break
+                finally:
+                    await change_stream.close()
 
-            for db_info in databases:
-                db_name = db_info["name"]
-                if db_name in dbs_ignorados:
-                    continue
-
-                db = client[db_name]
-                colls = await db.list_collection_names()
-                for coll_name in colls:
-                    collection = db[coll_name]
-                    tasks.append(asyncio.create_task(watch_collection(collection)))
-
+            tasks.append(asyncio.create_task(watch_change(client)))
             await asyncio.gather(*tasks)
 
         except asyncio.CancelledError:

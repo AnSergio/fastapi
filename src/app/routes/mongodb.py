@@ -1,7 +1,7 @@
 # src/app/routes/mongodb.py
 from fastapi import APIRouter,  HTTPException
 from src.app.core.mongodb import convert_id,  convert_oid
-from src.app.schemas.mongodb import AggregateRequest, DeletesRequest, FindReplaceRequest, FindUpdateRequest, FindsRequest
+from src.app.schemas.mongodb import AggregateRequest, DeleteRequest, FindReplaceRequest, FindUpdateRequest, FindRequest
 from src.app.schemas.mongodb import InsertRequest, InsertManyRequest, UpdatesRequest
 from src.app.core.config import client
 
@@ -25,7 +25,7 @@ async def on_aggregate(body: AggregateRequest):
     try:
         db = client[body.db]
         collection = db[body.coll]
-        cursor = collection.aggregate(pipeline, **options)
+        cursor = await collection.aggregate(pipeline, **options)
         result = []
         async for doc in cursor:
             doc = convert_id(doc)
@@ -40,7 +40,7 @@ async def on_aggregate(body: AggregateRequest):
 
 
 @router.delete("/delete")
-async def on_delete(body: DeletesRequest):
+async def on_delete(body: DeleteRequest):
     # print(f"body: {body}")
     query = convert_oid(body.query)
     options = body.options or {}
@@ -69,7 +69,7 @@ async def on_delete(body: DeletesRequest):
 
 
 @router.delete("/deletemany")
-async def on_delete_many(body: DeletesRequest):
+async def on_delete_many(body: DeleteRequest):
     # print(f"body: {body}")
     query = convert_oid(body.query)
     options = body.options or {}
@@ -92,7 +92,7 @@ async def on_delete_many(body: DeletesRequest):
 
 
 @router.post("/find")
-async def on_find(body: FindsRequest):
+async def on_find(body: FindRequest):
     # print(f"body: {body}")
     filter = convert_oid(body.filter)
     options = body.options or {}
@@ -111,7 +111,7 @@ async def on_find(body: FindsRequest):
             result.append(doc)
 
         if not result:
-            raise HTTPException(status_code=404, detail="Nenhum documento encontrado")
+            return []
 
         return result
 
@@ -120,7 +120,7 @@ async def on_find(body: FindsRequest):
 
 
 @router.post("/findone")
-async def on_find_one(body: FindsRequest):
+async def on_find_one(body: FindRequest):
     # print(f"body: {body}")
     filter = convert_oid(body.filter)
     options = body.options or {}
@@ -134,7 +134,7 @@ async def on_find_one(body: FindsRequest):
         result = await collection.find_one(filter, **options)
 
         if not result:
-            raise HTTPException(status_code=404, detail="Documento não encontrado")
+            return {}
 
         result = convert_id(result)
         return result
@@ -144,7 +144,7 @@ async def on_find_one(body: FindsRequest):
 
 
 @router.post("/finddelete")
-async def on_find_one_and_delete(body: FindsRequest):
+async def on_find_one_and_delete(body: FindRequest):
     # print(f"body: {body}")
     filter = convert_oid(body.filter)
     options = body.options or {}
@@ -199,7 +199,7 @@ async def on_find_one_and_update(body: FindUpdateRequest):
     update = body.update
     options = body.options or {}
 
-    if not body.db or not body.coll or not filter or not update or not update.get("$set"):
+    if not body.db or not body.coll or not filter or not update:
         raise HTTPException(status_code=400, detail="Banco de dados, coleção, filter e update com $set são necessários!")
 
     try:
@@ -219,7 +219,7 @@ async def on_find_one_and_update(body: FindUpdateRequest):
 
 @router.post("/insert")
 async def on_insert_one(body: InsertRequest):
-    print(f"body: {body}")
+    # print(f"body: {body}")
     doc = body.doc
     options = body.options or {}
 
@@ -267,7 +267,7 @@ async def on_update_one(body: UpdatesRequest):
     update = body.update
     options = body.options or {}
 
-    if not body.db or not body.coll or not query or not update or not update.get("$set"):
+    if not body.db or not body.coll or not query or not update:
         raise HTTPException(status_code=400, detail="Banco de dados, coleção, query e update com $set são necessários!")
 
     try:
@@ -291,7 +291,7 @@ async def on_update_many(body: UpdatesRequest):
     update = body.update
     options = body.options or {}
 
-    if not body.db or not body.coll or not query or not update or not update.get("$set"):
+    if not body.db or not body.coll or not query or not update:
         raise HTTPException(status_code=400, detail="Banco de dados, coleção, query e update com $set são necessários!")
 
     try:
