@@ -53,16 +53,14 @@ async def on_basic_songs(request: Request):
     basic = request.headers.get("authorization")
     token = None
 
-    if not basic.lower().startswith("basic "):
-        raise HTTPException(status_code=400, detail="Formato de autenticação inválido")
+    if basic and basic.lower().startswith("basic "):
+        encoded = basic.split(" ")[1]
+        token = base64.b64decode(encoded).decode("utf-8").replace(":", "")
+
+    else:
+        token = request.query_params.get("token")
 
     try:
-        if basic and basic.lower().startswith("basic "):
-            encoded = basic.split(" ")[1]
-            token = base64.b64decode(encoded).decode("utf-8").replace(":", "")
-        else:
-            token = request.query_params.get("token")
-
         if not token:
             raise HTTPException(status_code=401, detail="Token não encontrado")
 
