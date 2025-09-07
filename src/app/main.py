@@ -1,17 +1,15 @@
 # src/main.py
-
 import asyncio
-import os
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_limiter.depends import RateLimiter
 from contextlib import asynccontextmanager
 from src.app.routes import websocket, auth, songs, mongodb, firebird, pdftext, comandos
 from src.app.core.security import on_basic_songs, on_bearer_auth
-from src.utils.rate_limit import redis_url
+from src.utils.rate_limit import init_redis
 from src.utils.realtime_fdb import main_fdb, stop_fdb
 from src.utils.realtime_mdb import main_mdb, stop_mdb
-from src.app.core.config import host, port, rdb_url, fdb_dns, fdb_user, fdb_pass, mdb_uri
+from src.app.core.config import host, port, fdb_dns, fdb_user, fdb_pass, mdb_uri
 from src.app.core.websocket import manager
 
 
@@ -19,7 +17,7 @@ from src.app.core.websocket import manager
 async def lifespan(app: FastAPI):
     # startup
     print(f"🌐 {app.title} em HTTP e WS http://{host}:{port} 🚀")
-    task_redis = asyncio.create_task(redis_url(rdb_url))
+    await init_redis()
     task_fdb = asyncio.create_task(main_fdb(fdb_dns, fdb_user, fdb_pass, manager))
     task_mdb = asyncio.create_task(main_mdb(mdb_uri, manager))
 
@@ -27,7 +25,7 @@ async def lifespan(app: FastAPI):
     # shutdown
     stop_fdb()
     stop_mdb()
-    for task in [task_redis, task_fdb, task_mdb]:
+    for task in [task_fdb, task_mdb]:
         if not task.done():
             task.cancel()
             try:
