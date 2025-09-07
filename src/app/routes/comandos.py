@@ -23,7 +23,7 @@ async def on_comando_linux(body: ComandoLinuxRequest):
         "start":   ["sudo", "systemctl", "start", nome],
         "stop":    ["sudo", "systemctl", "stop", nome],
         "restart": ["sudo", "systemctl", "restart", nome],
-        "status":  ["systemctl", "is-active", nome],  # sem sudo para evitar senha
+        "status":  ["systemctl", "is-active", nome],
     }
 
     action = valid_commands.get(comando)

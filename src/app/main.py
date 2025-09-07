@@ -91,7 +91,7 @@ app.include_router(
 
 app.include_router(
     comandos.router,
-    prefix="/comando",
+    prefix="/cmd",
     tags=["Comandos linux e win"],
     dependencies=[Depends(on_bearer_auth), Depends(RateLimiter(times=150, seconds=60))]
 )
