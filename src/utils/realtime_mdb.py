@@ -33,8 +33,8 @@ async def start_mdb(uri: str, manager: ConnectionManager):
                         ns = change.get("ns")
                         if ns:
                             realtime = f"{ns['db']}/{ns['coll']}"
-                            await manager.broadcast({"event": "realtime", "message": realtime})
-                            print(realtime, flush=True)
+                            await manager.send({"event": "realtime", "message": realtime})
+                            # print(realtime, flush=True)
 
                         if stop_event.is_set():
                             break

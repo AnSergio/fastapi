@@ -1,36 +1,35 @@
 # src/app/routes/websocket.py
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from src.app.core.security import verificar_token
 from src.app.core.websocket import manager
+
 
 router = APIRouter()
 
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    # Extrai o token do subprotocol
-    raw_protocol = websocket.headers.get("sec-websocket-protocol", "")
-    token = raw_protocol.replace("Bearer, ", "").strip()
+    token = websocket.query_params.get("token")
 
     if not token:
         await websocket.close(code=1008, reason="Token não fornecido")
         return
 
-    # Valida token JWT
-    user = verificar_token(token)
-    if not user:
-        await websocket.close(code=4001, reason="Token inválido ou expirado")
-        return
-
-    # Conecta cliente
     try:
-        await manager.connect(websocket, subprotocol="Bearer")
-        print(f"✅ Conectado: {user}", flush=True)
+        await manager.connect(websocket)
+        await manager.send({"event": "connection", "message": f"{token} connected"})
+        print(f"✅ Conectado: {token}", flush=True)
 
         while True:
-            await websocket.receive_text()
-            # print(f"✅ Conectado: {user}", flush=True)
+            data = await websocket.receive_text()
+            if data == "ping":
+                # resposta direta ao remetente
+                await manager.send_to(websocket, "pong")
+                # print(f"🚀 Recebendo de {token}: {data}", flush=True)
+
+            # send para todos
+            # await manager.send("pong")
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-        await manager.broadcast({"event": "user_disconnected", "_id": user["_id"], "nome": user["nome"]})
+        await manager.send({"event": "connection", "message": f"{token} disconnected"})
+        print(f"❌ Desconectado: {token}", flush=True)
