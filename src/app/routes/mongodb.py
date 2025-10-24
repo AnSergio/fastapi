@@ -42,16 +42,16 @@ async def on_aggregate(body: AggregateRequest):
 @router.delete("/delete")
 async def on_delete(body: DeleteRequest):
     # print(f"body: {body}")
-    query = convert_oid(body.query)
+    filter = convert_oid(body.filter)
     options = body.options or {}
 
-    if not body.db or not body.coll or not query:
-        raise HTTPException(status_code=400, detail="Banco de dados, coleção e query são necessários!")
+    if not body.db or not body.coll or not filter:
+        raise HTTPException(status_code=400, detail="Banco de dados, coleção e filter são necessários!")
 
     try:
         db = client[body.db]
         collection = db[body.coll]
-        result = await collection.delete_one(query, **options)
+        result = await collection.delete_one(filter, **options)
 
         if not result.deleted_count:
             raise HTTPException(status_code=404, detail="Documento não encontrado para exclusão")
@@ -71,16 +71,16 @@ async def on_delete(body: DeleteRequest):
 @router.delete("/deletemany")
 async def on_delete_many(body: DeleteRequest):
     # print(f"body: {body}")
-    query = convert_oid(body.query)
+    filter = convert_oid(body.filter)
     options = body.options or {}
 
-    if not body.db or not body.coll or not query:
-        raise HTTPException(status_code=400, detail="Banco de dados, coleção e query são necessários!")
+    if not body.db or not body.coll or not filter:
+        raise HTTPException(status_code=400, detail="Banco de dados, coleção e filter são necessários!")
 
     try:
         db = client[body.db]
         collection = db[body.coll]
-        result = await collection.delete_many(query, **options)
+        result = await collection.delete_many(filter, **options)
 
         if not result.deleted_count:
             raise HTTPException(status_code=404, detail="Documentos não encontrado para exclusão")

@@ -13,7 +13,7 @@ class AggregateRequest(BaseModel):
 class DeleteRequest(BaseModel):
     db: str = Field(..., description="Nome do banco de dados")
     coll: str = Field(..., description="Nome da coleção")
-    query: Dict = Field(..., description="query")
+    filter: Dict = Field(..., description="filter")
     options: Optional[dict] = None
 
 

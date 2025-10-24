@@ -1,19 +1,20 @@
 # src/app/routes/auth.py
 import base64
 import secrets
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from src.app.core.mongodb import convert_id
 from src.app.core.security import criar_token, on_basic_auth
 from src.app.core.config import client
-from src.app.schemas.auth import AuthResponse, description, responses
+from src.app.schemas.auth import AuthRequest, AuthResponse, description, responses
 
 
 router = APIRouter()
 security = HTTPBasic()
 
 
-@router.get(
+@router.post(
     "/auth",
     summary="Autenticar usuário",
     description=description,
@@ -21,9 +22,14 @@ security = HTTPBasic()
     responses=responses,
     status_code=200
 )
-async def auth(credentials: HTTPBasicCredentials = Depends(on_basic_auth)):
+async def auth(credentials: HTTPBasicCredentials = Depends(on_basic_auth), body: Optional[AuthRequest] = None, ):
     if not (credentials.username and credentials.password):
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
+
+    if body.db:
+        database = body.db
+    else:
+        database = "acesso"
 
     pipeline = [
         {"$match": {"nome": credentials.username}},
@@ -33,7 +39,7 @@ async def auth(credentials: HTTPBasicCredentials = Depends(on_basic_auth)):
     ]
 
     try:
-        db = client["acesso"]
+        db = client[database]
         collection = db["usuarios"]
         cursor = await collection.aggregate(pipeline)
 

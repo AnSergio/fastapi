@@ -3,6 +3,10 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 
+class AuthRequest(BaseModel):
+    db: str = Field(..., description="Nome do banco de dados")
+
+
 class Usuario(BaseModel):
     id: str = Field(..., alias="_id")
     nome: str
