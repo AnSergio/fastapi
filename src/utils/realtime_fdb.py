@@ -16,7 +16,7 @@ async def start_fdb(dsn: str, user: str, password: str, manager: ConnectionManag
     global client
     time_delay = 1
     valid_time = {1: 2, 2: 5, 5: 10, 10: 30, 30: 60, 60: 60}
-    event_nomes = ["cp_pedido", "cp_pedido_item", "tnfcanfen", "tnfcanfsa", "tnfitnfen", "tnfitnfsa"]
+    event_nomes = ["cp_pedido", "cp_pedido_item", "cp_pedido_entrega", "tnfcanfen", "tnfcanfsa", "tnfitnfen", "tnfitnfsa"]
 
     while not stop_event.is_set():
         print(f"📡 Iniciando realtime_fdb! (delay: {time_delay}s)", flush=True)
