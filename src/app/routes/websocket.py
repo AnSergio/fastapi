@@ -1,7 +1,9 @@
 # src/app/routes/websocket.py
+import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from src.app.core.websocket import manager
-
+from src.app.core.security import verificar_token
+from src.app.schemas.websocket import WebSocketData, WebSocketUser
 
 router = APIRouter()
 
@@ -15,16 +17,26 @@ async def websocket_endpoint(websocket: WebSocket):
         return
 
     try:
+        usuario = verificar_token(token)
+        if not usuario:
+            await websocket.close(code=1008, reason="Token inválido ou expirado")
+            return
+
+        user = WebSocketUser(**usuario)
         await manager.connect(websocket)
-        await manager.send({"event": "connection", "message": f"{token} connected"})
-        print(f"✅ Conectado: {token}", flush=True)
+        await manager.send({"event": "connection", "message": f"{user.nome} connected"})
+        print(f"✅ Conectado: {user.nome}", flush=True)
 
         while True:
             data = await websocket.receive_text()
-            if data == "ping":
+            data_json = json.loads(data)
+            receiver = WebSocketData(**data_json)
+            # print(f"🚀 receiver {receiver}", flush=True)
+
+            if receiver.event == "ping":
                 # resposta direta ao remetente
-                await manager.send_to(websocket, "pong")
-                # print(f"🚀 Recebendo de {token}: {data}", flush=True)
+                await manager.send_to(websocket, {"event": "pong", "message": f"{user.nome}"})
+                # print(f"🚀 Manager {data}", flush=True)
 
             # send para todos
             # await manager.send("pong")
