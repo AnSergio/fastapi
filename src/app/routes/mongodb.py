@@ -16,16 +16,16 @@ router = APIRouter()
 )
 async def on_aggregate(body: AggregateRequest):
     # print(f"body: {body}")
-    pipeline = convert_oid(body.pipeline)
+    docs = convert_oid(body.docs)
     options = body.options or {}
 
-    if not body.db or not body.coll or not pipeline:
-        raise HTTPException(status_code=400, detail="Banco de dados, coleção e pipeline são necessários!")
+    if not body.db or not body.coll or not docs:
+        raise HTTPException(status_code=400, detail="Banco de dados, coleção e docs são necessários!")
 
     try:
         db = client[body.db]
         collection = db[body.coll]
-        cursor = await collection.aggregate(pipeline, **options)
+        cursor = await collection.aggregate(docs, **options)
         result = []
         async for doc in cursor:
             doc = convert_id(doc)
@@ -39,7 +39,7 @@ async def on_aggregate(body: AggregateRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/delete")
+@router.post("/delete")
 async def on_delete(body: DeleteRequest):
     # print(f"body: {body}")
     filter = convert_oid(body.filter)
@@ -68,7 +68,7 @@ async def on_delete(body: DeleteRequest):
         raise HTTPException(status_code=status, detail=detail.strip())
 
 
-@router.delete("/deletemany")
+@router.post("/deletemany")
 async def on_delete_many(body: DeleteRequest):
     # print(f"body: {body}")
     filter = convert_oid(body.filter)
@@ -260,20 +260,20 @@ async def on_insert_many(body: InsertManyRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/update")
+@router.post("/update")
 async def on_update_one(body: UpdatesRequest):
     # print(f"body: {body}")
-    query = convert_oid(body.query)
+    filter = convert_oid(body.filter)
     update = body.update
     options = body.options or {}
 
-    if not body.db or not body.coll or not query or not update:
-        raise HTTPException(status_code=400, detail="Banco de dados, coleção, query e update com $set são necessários!")
+    if not body.db or not body.coll or not filter or not update:
+        raise HTTPException(status_code=400, detail="Banco de dados, coleção, filter e update com $set são necessários!")
 
     try:
         db = client[body.db]
         collection = db[body.coll]
-        result = await collection.update_one(query, update, **options)
+        result = await collection.update_one(filter, update, **options)
 
         if not result:
             raise HTTPException(status_code=404, detail="Documento não encontrado")
@@ -284,20 +284,20 @@ async def on_update_one(body: UpdatesRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/updatemany")
+@router.post("/updatemany")
 async def on_update_many(body: UpdatesRequest):
     # print(f"body: {body}")
-    query = convert_oid(body.query)
+    filter = convert_oid(body.filter)
     update = body.update
     options = body.options or {}
 
-    if not body.db or not body.coll or not query or not update:
-        raise HTTPException(status_code=400, detail="Banco de dados, coleção, query e update com $set são necessários!")
+    if not body.db or not body.coll or not filter or not update:
+        raise HTTPException(status_code=400, detail="Banco de dados, coleção, filter e update com $set são necessários!")
 
     try:
         db = client[body.db]
         collection = db[body.coll]
-        result = await collection.update_many(query, update, **options)
+        result = await collection.update_many(filter, update, **options)
 
         if not result:
             raise HTTPException(status_code=404, detail="Documento não encontrado")

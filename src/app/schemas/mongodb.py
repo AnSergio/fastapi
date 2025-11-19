@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 class AggregateRequest(BaseModel):
     db: str = Field(..., description="Nome do banco de dados")
     coll: str = Field(..., description="Nome da coleção")
-    pipeline: List[Dict[str, Any]] = Field(..., description="Pipeline de agregação")
+    docs: List[Dict[str, Any]] = Field(..., description="Pipeline de agregação")
     options: Optional[Dict[str, Any]] = Field(default=None, description="Opções adicionais para agregação")
 
 
@@ -57,6 +57,6 @@ class InsertManyRequest(BaseModel):
 class UpdatesRequest(BaseModel):
     db: str = Field(..., description="Nome do banco de dados")
     coll: str = Field(..., description="Nome da coleção")
-    query: Dict = Field(..., description="query")
+    filter: Dict = Field(..., description="filter")
     update: Dict = Field(..., description="update")
     options: Optional[dict] = None

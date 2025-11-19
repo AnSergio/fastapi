@@ -8,7 +8,7 @@ from src.app.schemas.websocket import WebSocketData, WebSocketUser
 router = APIRouter()
 
 
-@router.websocket("/ws")
+@router.websocket("/")
 async def websocket_endpoint(websocket: WebSocket):
     token = websocket.query_params.get("token")
 
